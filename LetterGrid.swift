@@ -45,10 +45,14 @@ class LetterGridViewModel: ObservableObject {
     @Published var hasCompletedInitialMove = false
     
     let letters: String
+    let lockedPositions: Set<Int>
+    let onWordStart: () -> Void
     let onWordSubmit: (String, [Int]) -> Void
     
-    init(letters: String, onWordSubmit: @escaping (String, [Int]) -> Void) {
+    init(letters: String, lockedPositions: Set<Int> = [], onWordStart: @escaping () -> Void, onWordSubmit: @escaping (String, [Int]) -> Void) {
         self.letters = letters
+        self.lockedPositions = lockedPositions
+        self.onWordStart = onWordStart
         self.onWordSubmit = onWordSubmit
     }
     
@@ -57,6 +61,11 @@ class LetterGridViewModel: ObservableObject {
     }
     
     func isValidNextPosition(_ lastPos: Position, _ newPos: Position) -> Bool {
+        // Check if position is locked
+        if lockedPositions.contains(newPos.index) {
+            return false
+        }
+        
         if hasCompletedInitialMove {
             return isAdjacent(lastPos, newPos) && !selectedPositions.contains(newPos)
         }
@@ -96,10 +105,16 @@ class LetterGridViewModel: ObservableObject {
     }
     
     func startDrag(at pos: Position) {
+        // Don't allow starting on locked positions
+        if lockedPositions.contains(pos.index) {
+            return
+        }
+        
         selectedPositions = [pos]
         isDragging = true
         initialDirection = nil
         hasCompletedInitialMove = false
+        onWordStart()
     }
     
     func endDrag() {
@@ -114,11 +129,17 @@ class LetterGridViewModel: ObservableObject {
     }
 }
 
-struct LetterGrid: View {
+// Enhanced Letter Grid for the Balatro-style game
+struct EnhancedLetterGrid: View {
     @StateObject var viewModel: LetterGridViewModel
     
-    init(letters: String, onWordSubmit: @escaping (String, [Int]) -> Void) {
-        _viewModel = StateObject(wrappedValue: LetterGridViewModel(letters: letters, onWordSubmit: onWordSubmit))
+    init(letters: String, lockedPositions: Set<Int> = [], onWordStart: @escaping () -> Void, onWordSubmit: @escaping (String, [Int]) -> Void) {
+        _viewModel = StateObject(wrappedValue: LetterGridViewModel(
+            letters: letters,
+            lockedPositions: lockedPositions,
+            onWordStart: onWordStart,
+            onWordSubmit: onWordSubmit
+        ))
     }
     
     var body: some View {
@@ -127,12 +148,20 @@ struct LetterGrid: View {
             let cellSize = gridSize / 4
             
             ZStack {
+                // Selection path overlay
+                SelectionPathOverlay(
+                    selectedPositions: viewModel.selectedPositions,
+                    cellSize: cellSize
+                )
+                
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: cellSize), spacing: 2), count: 4), spacing: 2) {
                     ForEach(0..<16) { index in
                         let position = Position(index: index)
-                        LetterCell(
+                        EnhancedLetterCell(
                             letter: String(viewModel.letters[viewModel.letters.index(viewModel.letters.startIndex, offsetBy: index)]),
                             isSelected: viewModel.selectedPositions.contains(position),
+                            isLocked: viewModel.lockedPositions.contains(index),
+                            selectionOrder: viewModel.selectedPositions.firstIndex(of: position),
                             size: cellSize
                         )
                         .gesture(
@@ -157,26 +186,182 @@ struct LetterGrid: View {
     }
 }
 
+struct EnhancedLetterCell: View {
+    let letter: String
+    let isSelected: Bool
+    let isLocked: Bool
+    let selectionOrder: Int?
+    let size: CGFloat
+    
+    @State private var isAnimating = false
+    
+    var body: some View {
+        ZStack {
+            // Base cell
+            RoundedRectangle(cornerRadius: 8)
+                .fill(cellBackgroundColor)
+                .shadow(radius: isSelected ? 4 : 2)
+            
+            // Border
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(borderColor, lineWidth: borderWidth)
+            
+            // Letter text
+            Text(letter.uppercased())
+                .font(.system(size: size * 0.4, weight: .bold))
+                .foregroundColor(textColor)
+            
+            // Selection order indicator
+            if let order = selectionOrder, isSelected {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Text("\(order + 1)")
+                            .font(.system(size: size * 0.2, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(2)
+                            .background(Circle().fill(Color.blue))
+                    }
+                    Spacer()
+                }
+                .padding(4)
+            }
+            
+            // Lock indicator
+            if isLocked {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: size * 0.2))
+                            .foregroundColor(.red)
+                        Spacer()
+                    }
+                }
+                .padding(4)
+            }
+        }
+        .frame(width: size, height: size)
+        .scaleEffect(isSelected ? 1.1 : 1.0)
+        .offset(y: isSelected ? -4 : 0)
+        .animation(.spring(response: 0.2), value: isSelected)
+        .scaleEffect(isAnimating ? 1.2 : 1.0)
+        .onChange(of: isSelected) { newValue in
+            if newValue {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    isAnimating = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeInOut(duration: 0.1)) {
+                        isAnimating = false
+                    }
+                }
+            }
+        }
+    }
+    
+    private var cellBackgroundColor: Color {
+        if isLocked {
+            return Color.red.opacity(0.3)
+        } else if isSelected {
+            return Color.blue.opacity(0.3)
+        } else {
+            return Color(.systemBackground)
+        }
+    }
+    
+    private var borderColor: Color {
+        if isLocked {
+            return Color.red
+        } else if isSelected {
+            return Color.blue
+        } else {
+            return Color.gray.opacity(0.3)
+        }
+    }
+    
+    private var borderWidth: CGFloat {
+        if isLocked || isSelected {
+            return 3
+        } else {
+            return 2
+        }
+    }
+    
+    private var textColor: Color {
+        if isLocked {
+            return Color.red
+        } else {
+            return Color.primary
+        }
+    }
+}
+
+struct SelectionPathOverlay: View {
+    let selectedPositions: [Position]
+    let cellSize: CGFloat
+    
+    var body: some View {
+        if selectedPositions.count > 1 {
+            Path { path in
+                for i in 0..<selectedPositions.count - 1 {
+                    let startPos = selectedPositions[i]
+                    let endPos = selectedPositions[i + 1]
+                    
+                    let startPoint = CGPoint(
+                        x: CGFloat(startPos.col) * cellSize + cellSize / 2,
+                        y: CGFloat(startPos.row) * cellSize + cellSize / 2
+                    )
+                    let endPoint = CGPoint(
+                        x: CGFloat(endPos.col) * cellSize + cellSize / 2,
+                        y: CGFloat(endPos.row) * cellSize + cellSize / 2
+                    )
+                    
+                    if i == 0 {
+                        path.move(to: startPoint)
+                    }
+                    path.addLine(to: endPoint)
+                }
+            }
+            .stroke(Color.blue, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+            .opacity(0.7)
+        }
+    }
+}
+
+// Legacy LetterGrid for backward compatibility
+struct LetterGrid: View {
+    @StateObject var viewModel: LetterGridViewModel
+    
+    init(letters: String, onWordSubmit: @escaping (String, [Int]) -> Void) {
+        _viewModel = StateObject(wrappedValue: LetterGridViewModel(
+            letters: letters,
+            onWordStart: {},
+            onWordSubmit: onWordSubmit
+        ))
+    }
+    
+    var body: some View {
+        EnhancedLetterGrid(
+            letters: viewModel.letters,
+            onWordStart: viewModel.onWordStart,
+            onWordSubmit: viewModel.onWordSubmit
+        )
+    }
+}
+
 struct LetterCell: View {
     let letter: String
     let isSelected: Bool
     let size: CGFloat
     
     var body: some View {
-        Text(letter.uppercased())
-            .font(.system(size: size * 0.4, weight: .bold))
-            .frame(width: size, height: size)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(.systemBackground))
-                    .shadow(radius: 2)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.accentColor : Color.gray.opacity(0.3), lineWidth: 2)
-            )
-            .scaleEffect(isSelected ? 1.1 : 1.0)
-            .offset(y: isSelected ? -4 : 0)
-            .animation(.spring(response: 0.2), value: isSelected)
+        EnhancedLetterCell(
+            letter: letter,
+            isSelected: isSelected,
+            isLocked: false,
+            selectionOrder: nil,
+            size: size
+        )
     }
 }
