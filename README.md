@@ -1,138 +1,135 @@
-# Word Scramble Master
+# Word Scramble Master - Pyxel Edition
 
-A modern Boggle-style word game that combines the satisfying word-finding mechanics of Boggle with the addictive progression system of Balatro. Built with React, TypeScript, and Vite for cross-platform deployment.
+🎮 **A retro word game combining Boggle mechanics with progressive difficulty!**
 
-## 🎮 Game Features
+## 🚀 Quick Start
 
-### Core Mechanics
-- **Boggle-style Word Finding**: Swipe through connected letters to form words
-- **Balatro-inspired Progression**: Roguelike rounds with escalating difficulty
-- **Strategic Power-ups**: Letter enhancers, word multipliers, and consumable boosts
-- **Economic Decisions**: Coin management, shop phases, and upgrade choices
+1. **Install Python 3.7+** on your system
+2. **Install Pyxel**: `pip install pyxel`  
+3. **Download the game**: `word_scramble_master.py`
+4. **Run the game**: `python word_scramble_master.py`
 
-### Game Structure
-- **8 Progressive Rounds**: Each round increases in difficulty
-- **3 Challenge Types**:
-  - **Quick Words**: Fast-paced word finding with time bonuses
-  - **Standard Challenges**: Balanced gameplay with varied objectives
-  - **Boss Challenges**: Unique mechanics and high-stakes gameplay
-- **Shop Phases**: Purchase power-ups between challenges
-- **5 Difficulty Stakes**: From Apprentice to Grandmaster
+## 🎯 Game Features
 
-### Power-up System
-- **Letter Enhancers**: Modify individual letters (Vowel Virtuoso, Golden Letters)
-- **Word Multipliers**: Affect entire words (Speed Demon, Chain Master)
-- **Consumable Boosts**: One-time use items (Grid Shuffle, Time Extensions)
+### ✅ Fixed Dictionary
+- **"halves", "twelve", "eleven", "twenty"** and 1000+ words now recognized
+- Comprehensive offline word validation
+- No internet connection required
 
-## 🚀 Technology Stack
+### ⚖️ Fair Game Balance  
+- Smart grid generation ensures sufficient word availability
+- Always enough words to progress through levels
+- Balanced difficulty progression
 
-- **React 18** - Modern UI framework with hooks
-- **TypeScript** - Type-safe development
-- **Vite** - Fast development and building
-- **Tailwind CSS** - Utility-first styling
-- **Context API** - Global state management
+### 📈 Progressive Difficulty
+- **Levels 1-3:** Easier (8-12 words needed, 70-90 seconds)
+- **Levels 4-6:** Harder (15-22 words needed, 40-60 seconds) 
+- **Boss Level:** Ultimate challenge (30 words, 60 seconds)
 
-## 🛠️ Development
+### 🎨 Retro Aesthetics
+- Authentic 16-bit graphics using Pyxel's classic color palette
+- 256x192 resolution for that nostalgic feel
+- Pixel-perfect UI design
 
-### Prerequisites
-- Node.js 16+ 
-- npm or yarn
+### 💾 Persistent Progress
+- Your scores, coins, and achievements automatically save
+- Continue where you left off between gaming sessions
+- Game data stored in `game_save.json`
 
-### Getting Started
-```bash
-# Install dependencies
-npm install
+## 🎮 Controls
 
-# Start development server
-npm run dev
+### Menu Navigation
+- **Arrow Keys:** Navigate menus
+- **Enter/Space:** Select option
+- **Q:** Quit game
+- **Escape:** Go back
 
-# Build for production
-npm run build
+### Gameplay
+- **Arrow Keys:** Move cursor on letter grid
+- **Enter:** Select/deselect letter
+- **Space:** Submit current word
+- **N:** Generate new grid (costs coins)
+- **Escape:** Clear current selection
 
-# Preview production build
-npm run preview
-```
+## 📊 Scoring System
 
-### Project Structure
-```
-src/
-├── components/          # React components
-│   ├── GameView.tsx    # Main game interface
-│   └── MainMenu.tsx    # Start screen
-├── contexts/           # React Context providers
-│   └── GameContext.tsx # Game state management
-├── hooks/              # Custom React hooks
-│   └── useGame.ts      # Game logic hook
-├── reducers/           # State reducers
-│   └── gameReducer.ts  # Game state reducer
-├── types/              # TypeScript definitions
-│   └── game.ts         # Game interfaces
-├── utils/              # Utility functions
-│   └── wordDictionary.ts # Word validation
-├── App.tsx             # Main app component
-├── main.tsx            # React entry point
-└── index.css           # Global styles
-```
+| Word Length | Base Points |
+|-------------|-------------|
+| 3-4 letters | 1 point     |
+| 5 letters   | 2 points    |
+| 6 letters   | 3 points    |
+| 7 letters   | 5 points    |
+| 8+ letters  | 11 points   |
 
-## 🎯 Game Design Philosophy
+**Difficulty Multipliers:**
+- Easy: 1.0x
+- Medium: 1.5x  
+- Hard: 2.0x
 
-**Word Scramble Master** innovates on the classic Boggle formula by adding:
+## 🏆 Game Modes
 
-1. **Strategic Depth**: Power-ups create meaningful choices and build variety
-2. **Progressive Difficulty**: Each round introduces new challenges and mechanics
-3. **Economic Decisions**: Coin management adds another layer of strategy
-4. **Replayability**: Randomized grids, power-up combinations, and difficulty stakes
+### Challenge Progression
+Complete increasingly difficult levels with:
+- **Progressive word requirements**
+- **Decreasing time limits**
+- **Escalating point targets**
 
-## 🌐 Deployment
+### Difficulty Settings
+- **Easy:** Longer time, fewer words needed
+- **Medium:** Balanced challenge
+- **Hard:** Maximum difficulty with score multipliers
 
-This React/TypeScript/Vite project can be deployed to:
+## 🛠️ Technical Details
 
-- **Web**: Any static hosting service (Vercel, Netlify, GitHub Pages)
-- **Mobile**: Using Capacitor or Cordova
-- **Desktop**: Using Electron
-- **PWA**: Progressive Web App with offline capabilities
+- **Engine:** Pyxel (Python retro game engine)
+- **Resolution:** 256x192 pixels
+- **Colors:** 16-color palette
+- **Grid:** Traditional 4x4 Boggle layout
+- **Dictionary:** 1000+ common English words
 
-### Build Commands
-```bash
-# Web deployment
-npm run build
+## 🎯 How to Play
 
-# Mobile (with Capacitor)
-npm install @capacitor/core @capacitor/cli
-npx cap init
-npx cap add ios
-npx cap add android
+1. **Select Difficulty:** Choose Easy, Medium, or Hard
+2. **Find Words:** Connect adjacent letters to form words (minimum 3 letters)
+3. **Submit Words:** Press Space to submit your current word
+4. **Beat the Clock:** Find enough words before time runs out
+5. **Progress:** Complete levels to advance through the game
+6. **Earn Coins:** Use coins to generate new grids when stuck
 
-# Desktop (with Electron)
-npm install electron electron-builder
-npm run build
-npm run electron
-```
+## 🔧 Troubleshooting
 
-## 🎨 Game Mechanics
+### Common Issues
 
-### Challenge Types
-- **Quick Challenges**: 60-90 seconds, bonus for speed
-- **Standard Challenges**: 2-3 minutes, balanced scoring
-- **Boss Challenges**: Unique mechanics (Letter Thief, Time Warden, etc.)
+**"No module named 'pyxel'"**
+- Solution: `pip install pyxel`
 
-### Power-up Categories
-- **Common**: Basic bonuses (10-20% improvements)
-- **Uncommon**: Moderate effects (25-50% bonuses)
-- **Rare**: Significant advantages (2x multipliers, special abilities)
-- **Legendary**: Game-changing effects (grid manipulation, massive bonuses)
+**Game won't start**
+- Ensure Python 3.7+ is installed
+- Check that `word_scramble_master.py` is in your current directory
 
-### Difficulty Stakes
-- **Apprentice**: Learning mode with generous time limits
-- **Scholar**: Standard difficulty with increased requirements
-- **Expert**: Reduced time and harder letter distributions
-- **Master**: Limited power-ups and higher stakes
-- **Grandmaster**: Ultimate challenge for word masters
+**Words not being accepted**
+- The game uses a curated dictionary of common English words
+- Words must be at least 3 letters long
+- Letters must be adjacent (including diagonally)
 
-## 🏆 Victory Conditions
+## 📝 Game Data
 
-Complete all 8 rounds to achieve victory! Each difficulty stake offers different rewards and unlocks new content.
+The game automatically saves your progress to `game_save.json` including:
+- High scores
+- Coins earned
+- Total words found
+- Game statistics
+
+## 🎨 Credits
+
+- **Built with:** [Pyxel](https://github.com/kitao/pyxel) by Takashi Kitao
+- **Inspired by:** Classic Boggle and modern roguelike progression
+- **Game Design:** Combining word-finding with strategic progression
+
+## 📄 License
+
+This game is provided as-is for educational and entertainment purposes.
 
 ---
 
-Built with ❤️ using React, TypeScript, and Vite
+**Enjoy finding words and climbing the difficulty ladder! 🎮✨**

@@ -206,8 +206,9 @@ export const RARITY_COLORS: Record<Rarity, string> = {
 
 // Game Actions for Reducer
 export type GameAction = 
-  | { type: 'START_GAME'; payload: { stake: DifficultyStake } }
-  | { type: 'SELECT_CHALLENGE'; payload: { challenge: Challenge } }
+  | { type: 'START_GAME'; payload?: { stake: DifficultyStake } }
+  | { type: 'LOAD_GAME'; payload: GameState }
+  | { type: 'SELECT_CHALLENGE'; payload: { challenge: Challenge } | Challenge }
   | { type: 'SUBMIT_WORD'; payload: { word: string; positions: number[]; timeTaken: number } }
   | { type: 'SKIP_CHALLENGE'; payload: { challenge: Challenge } }
   | { type: 'PURCHASE_ITEM'; payload: { item: ShopItem } }

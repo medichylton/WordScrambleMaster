@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { generateBoggleGrid, isValidWord, calculateWordScore, isValidPath, pathToWord } from '../utils/wordDictionary';
+import { generateBoggleGrid, isValidWordSync, isValidWord, calculateWordScore, isValidPath, pathToWord, areAdjacent, getWordDefinition } from '../utils/wordDictionary';
 
 interface Position {
   row: number;
@@ -12,104 +12,204 @@ interface LetterGridProps {
   onCurrentWordChange?: (word: string) => void;
   timeRemaining: number;
   hideWordDisplay?: boolean;
+  foundWords?: string[];
 }
 
-export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, timeRemaining, hideWordDisplay = false }: LetterGridProps) {
+export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, timeRemaining, hideWordDisplay = false, foundWords = [] }: LetterGridProps) {
   const [grid, setGrid] = useState<string[][]>([]);
   const [selectedPath, setSelectedPath] = useState<Position[]>([]);
   const [currentWord, setCurrentWord] = useState('');
-  const [foundWords, setFoundWords] = useState<string[]>([]);
+  const [localFoundWords, setLocalFoundWords] = useState<string[]>([]);
   const [isSelecting, setIsSelecting] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+  const [wordValidationStatus, setWordValidationStatus] = useState<'checking' | 'valid' | 'invalid' | 'unknown' | 'already-found'>('unknown');
+  const [moveHistory, setMoveHistory] = useState<{word: string, path: Position[], score: number, timestamp: number}[]>([]);
+
+  // Use foundWords prop if provided, otherwise use local state
+  const allFoundWords = foundWords.length > 0 ? foundWords : localFoundWords;
 
   useEffect(() => {
-    // Generate new grid when component mounts
     setGrid(generateBoggleGrid());
   }, []);
 
   useEffect(() => {
-    // Update current word when path changes
     if (selectedPath.length > 0) {
       const word = pathToWord(grid, selectedPath);
       setCurrentWord(word);
       onCurrentWordChange?.(word);
+      
+      // Validate path first
+      if (!isValidPath(grid, selectedPath)) {
+        setWordValidationStatus('invalid');
+        return;
+      }
+      
+      if (word.length >= 3) {
+        // Check if word was already found
+        if (allFoundWords.includes(word)) {
+          setWordValidationStatus('already-found');
+        } else {
+          const syncResult = isValidWordSync(word);
+          if (syncResult === true) {
+            setWordValidationStatus('valid');
+          } else if (syncResult === false) {
+            setWordValidationStatus('invalid');
+          } else {
+            setWordValidationStatus('checking');
+            isValidWord(word).then(isValid => {
+              setWordValidationStatus(isValid ? 'valid' : 'invalid');
+            });
+          }
+        }
+      } else {
+        setWordValidationStatus('unknown');
+      }
     } else {
       setCurrentWord('');
+      setWordValidationStatus('unknown');
       onCurrentWordChange?.('');
     }
-  }, [selectedPath, grid, onCurrentWordChange]);
+  }, [selectedPath, grid, onCurrentWordChange, allFoundWords]);
 
-  const handleStart = (row: number, col: number) => {
-    setIsDragging(true);
-    setIsSelecting(true);
-    setSelectedPath([{ row, col }]);
-  };
-
-  const handleMove = (row: number, col: number) => {
-    if (!isDragging || !isSelecting) return;
-    
-    const newPosition = { row, col };
-    
-    // Check if already selected
-    const existingIndex = selectedPath.findIndex(pos => pos.row === row && pos.col === col);
-    
-    if (existingIndex !== -1) {
-      // Backtrack to this position
-      setSelectedPath(selectedPath.slice(0, existingIndex + 1));
-      return;
-    }
-
-    // Check if adjacent to last selected
-    if (selectedPath.length > 0) {
-      const lastPos = selectedPath[selectedPath.length - 1];
-      const rowDiff = Math.abs(newPosition.row - lastPos.row);
-      const colDiff = Math.abs(newPosition.col - lastPos.col);
-      
-      if (rowDiff <= 1 && colDiff <= 1 && !(rowDiff === 0 && colDiff === 0)) {
-        setSelectedPath([...selectedPath, newPosition]);
-      }
-    }
-  };
-
-  const handleEnd = () => {
-    if (!isDragging) return;
-    
-    setIsDragging(false);
-    setIsSelecting(false);
-    
-    // Auto-submit word if valid
-    if (currentWord.length >= 3 && isValidWord(currentWord) && !foundWords.includes(currentWord)) {
-      const timeBonus = timeRemaining > 60 ? 1.5 : timeRemaining > 30 ? 1.2 : 1.0;
-      const score = calculateWordScore(currentWord, timeBonus);
-      
-      setFoundWords([...foundWords, currentWord]);
-      onWordFound(currentWord, score);
-      onScoreUpdate(score);
-    }
-    
-    // Clear selection
-    setSelectedPath([]);
-    setCurrentWord('');
-  };
-
-  const getCellFromEvent = (e: React.TouchEvent | React.MouseEvent): Position | null => {
-    const touch = 'touches' in e ? e.touches[0] : e;
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    
+  const getCellFromPoint = (clientX: number, clientY: number): Position | null => {
+    const element = document.elementFromPoint(clientX, clientY);
     if (element && element.classList.contains('letter-cell')) {
       const row = parseInt(element.getAttribute('data-row') || '0');
       const col = parseInt(element.getAttribute('data-col') || '0');
       return { row, col };
     }
-    
     return null;
   };
 
-  const clearSelection = () => {
-    setSelectedPath([]);
-    setCurrentWord('');
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const cell = getCellFromPoint(touch.clientX, touch.clientY);
+    if (cell) {
+      setIsSelecting(true);
+      setSelectedPath([cell]);
+      
+      // Add haptic feedback for mobile
+      if (navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (!isSelecting) return;
+    
+    const touch = e.touches[0];
+    const cell = getCellFromPoint(touch.clientX, touch.clientY);
+    if (!cell) return;
+
+    const existingIndex = selectedPath.findIndex(pos => pos.row === cell.row && pos.col === cell.col);
+    
+    if (existingIndex !== -1) {
+      // Backtrack to this position
+      setSelectedPath(selectedPath.slice(0, existingIndex + 1));
+    } else if (selectedPath.length > 0) {
+      const lastPos = selectedPath[selectedPath.length - 1];
+      // Use enhanced adjacency checking
+      if (areAdjacent(lastPos, cell)) {
+        setSelectedPath([...selectedPath, cell]);
+        
+        // Light haptic feedback for each new letter
+        if (navigator.vibrate) {
+          navigator.vibrate(5);
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = async (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (!isSelecting) return;
+    
     setIsSelecting(false);
-    setIsDragging(false);
+    await processWordSubmission();
+    setSelectedPath([]);
+  };
+
+  const handleMouseDown = (row: number, col: number) => {
+    setIsSelecting(true);
+    setSelectedPath([{ row, col }]);
+  };
+
+  const handleMouseEnter = (row: number, col: number) => {
+    if (!isSelecting) return;
+    
+    const cell = { row, col };
+    const existingIndex = selectedPath.findIndex(pos => pos.row === row && pos.col === col);
+    
+    if (existingIndex !== -1) {
+      // Backtrack to this position
+      setSelectedPath(selectedPath.slice(0, existingIndex + 1));
+    } else if (selectedPath.length > 0) {
+      const lastPos = selectedPath[selectedPath.length - 1];
+      // Use enhanced adjacency checking
+      if (areAdjacent(lastPos, cell)) {
+        setSelectedPath([...selectedPath, cell]);
+      }
+    }
+  };
+
+  const handleMouseUp = async () => {
+    if (!isSelecting) return;
+    
+    setIsSelecting(false);
+    await processWordSubmission();
+    setSelectedPath([]);
+  };
+
+  const processWordSubmission = async () => {
+    if (currentWord.length >= 3 && !allFoundWords.includes(currentWord)) {
+      // Validate path first
+      if (!isValidPath(grid, selectedPath)) {
+        // Error haptic feedback for invalid path
+        if (navigator.vibrate) {
+          navigator.vibrate(100);
+        }
+        return;
+      }
+
+      let isValid = false;
+      if (wordValidationStatus === 'checking') {
+        isValid = await isValidWord(currentWord);
+      } else {
+        isValid = wordValidationStatus === 'valid';
+      }
+      
+      if (isValid) {
+        const timeBonus = timeRemaining > 60 ? 1.5 : timeRemaining > 30 ? 1.2 : 1.0;
+        const score = calculateWordScore(currentWord, timeBonus);
+        
+        // Add to move history
+        const move = {
+          word: currentWord,
+          path: [...selectedPath],
+          score,
+          timestamp: Date.now()
+        };
+        setMoveHistory(prev => [...prev, move]);
+        
+        if (foundWords.length === 0) {
+          setLocalFoundWords([...localFoundWords, currentWord]);
+        }
+        onWordFound(currentWord, score);
+        onScoreUpdate(score);
+        
+        // Success haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate([50, 50, 50]);
+        }
+      } else {
+        // Error haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(100);
+        }
+      }
+    }
   };
 
   const isCellSelected = (row: number, col: number): boolean => {
@@ -121,71 +221,94 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
     return index !== -1 ? index + 1 : 0;
   };
 
+  const isCellInPath = (row: number, col: number): boolean => {
+    const index = selectedPath.findIndex(pos => pos.row === row && pos.col === col);
+    return index !== -1 && index < selectedPath.length - 1;
+  };
+
   const shuffleGrid = () => {
     setGrid(generateBoggleGrid());
-    setFoundWords([]);
-    clearSelection();
+    if (foundWords.length === 0) {
+      setLocalFoundWords([]);
+    }
+    setSelectedPath([]);
+    setCurrentWord('');
+    setWordValidationStatus('unknown');
+    setMoveHistory([]);
+  };
+
+  const clearSelection = () => {
+    setSelectedPath([]);
+    setIsSelecting(false);
+    setCurrentWord('');
+    setWordValidationStatus('unknown');
+  };
+
+  const submitWord = async () => {
+    if (currentWord.length >= 3 && !allFoundWords.includes(currentWord)) {
+      await processWordSubmission();
+    }
+    
+    setSelectedPath([]);
+    setCurrentWord('');
+    setWordValidationStatus('unknown');
+  };
+
+  const getWordValidationClass = () => {
+    if (currentWord.length < 3) return '';
+    
+    // Check path validity first
+    if (selectedPath.length > 0 && !isValidPath(grid, selectedPath)) {
+      return 'invalid';
+    }
+    
+    switch (wordValidationStatus) {
+      case 'valid': return 'valid';
+      case 'invalid': return 'invalid';
+      case 'checking': return 'checking';
+      case 'already-found': return 'already-found';
+      default: return '';
+    }
   };
 
   return (
-    <div className={hideWordDisplay ? "" : "space-y-4"}>
-      {/* Current Word Display - Hidden in mobile mode */}
+    <div className="letter-grid-container">
       {!hideWordDisplay && (
-        <div className="text-center">
-          <div className="text-lg md:text-2xl font-bold text-white mb-2">
-            {currentWord || 'SELECT LETTERS TO FORM WORDS'}
-          </div>
-          <div className="text-sm text-gray-300">
-            {currentWord.length >= 3 ? (
-              isValidWord(currentWord) ? (
-                foundWords.includes(currentWord) ? (
-                  <span className="text-yellow-400">ALREADY FOUND!</span>
-                ) : (
-                  <span className="text-green-400">✓ VALID WORD! RELEASE TO SUBMIT</span>
-                )
-              ) : (
-                <span className="text-red-400">✗ NOT A VALID WORD</span>
-              )
-            ) : (
-              isDragging ? 'KEEP SWIPING...' : 'SWIPE THROUGH LETTERS TO FORM WORDS'
-            )}
-          </div>
+        <div className={`current-word ${getWordValidationClass()}`}>
+          {currentWord || 'Swipe to form words...'}
+          {wordValidationStatus === 'checking' && (
+            <span style={{ marginLeft: '8px', fontSize: '8px' }}>⏳</span>
+          )}
+          {selectedPath.length > 0 && !isValidPath(grid, selectedPath) && (
+            <span style={{ marginLeft: '8px', fontSize: '8px', color: 'var(--pyxel-red)' }}>❌</span>
+          )}
         </div>
       )}
-
-      {/* Letter Grid */}
+      
       <div 
         className="letter-grid"
-        onMouseLeave={handleEnd}
-        onTouchEnd={handleEnd}
-        onTouchCancel={handleEnd}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseUp={handleMouseUp}
       >
         {grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const isSelected = isCellSelected(rowIndex, colIndex);
+            const isInPath = isCellInPath(rowIndex, colIndex);
             const selectionOrder = getCellSelectionOrder(rowIndex, colIndex);
             
             return (
               <div
                 key={`${rowIndex}-${colIndex}`}
-                className={`letter-cell ${isSelected ? 'selected' : ''}`}
+                className={`letter-cell ${isSelected ? 'selected' : ''} ${isInPath ? 'path' : ''}`}
                 data-row={rowIndex}
                 data-col={colIndex}
-                onMouseDown={() => handleStart(rowIndex, colIndex)}
-                onMouseEnter={() => handleMove(rowIndex, colIndex)}
-                onMouseUp={handleEnd}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  handleStart(rowIndex, colIndex);
-                }}
-                onTouchMove={(e) => {
-                  e.preventDefault();
-                  const pos = getCellFromEvent(e);
-                  if (pos) handleMove(pos.row, pos.col);
-                }}
+                onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
+                onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
               >
                 {letter}
-                {isSelected && selectionOrder > 0 && (
+                {selectionOrder > 0 && (
                   <div className="selection-order">
                     {selectionOrder}
                   </div>
@@ -196,29 +319,64 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
         )}
       </div>
 
-      {/* Controls - Hidden in mobile mode */}
-      {!hideWordDisplay && (
-        <div className="flex justify-center gap-4">
-          <button 
-            onClick={shuffleGrid}
-            className="btn btn-primary"
-          >
-            NEW GRID
-          </button>
+      <div className="action-buttons">
+        <button 
+          onClick={submitWord} 
+          className="action-button"
+          disabled={currentWord.length < 3 || allFoundWords.includes(currentWord) || wordValidationStatus === 'invalid' || (selectedPath.length > 0 && !isValidPath(grid, selectedPath))}
+        >
+          SUBMIT
+        </button>
+        <button onClick={clearSelection} className="action-button">
+          CLEAR
+        </button>
+        <button onClick={shuffleGrid} className="action-button">
+          SHUFFLE
+        </button>
+      </div>
+
+      {allFoundWords.length > 0 && (
+        <div className="found-words">
+          <div style={{ 
+            color: 'var(--pyxel-yellow)', 
+            fontSize: 'clamp(8px, 2vw, 10px)', 
+            marginBottom: '8px',
+            textAlign: 'center',
+            fontWeight: 'bold'
+          }}>
+            FOUND WORDS ({allFoundWords.length})
+          </div>
+          {allFoundWords.map((word, index) => (
+            <div key={index} className="word-item">
+              <span>{word.toUpperCase()}</span>
+              <span style={{ color: 'var(--pyxel-yellow)' }}>
+                {calculateWordScore(word, 1)}pts
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Found Words - Hidden in mobile mode */}
-      {!hideWordDisplay && foundWords.length > 0 && (
-        <div className="card">
-          <h4 className="text-lg font-bold mb-2">WORDS FOUND ({foundWords.length})</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {foundWords.map((word, index) => (
-              <div key={index} className="word-found text-center p-2 bg-gray-700 border border-green-400">
-                {word.toUpperCase()}
-              </div>
-            ))}
-          </div>
+      {/* Move History Debug (can be removed in production) */}
+      {process.env.NODE_ENV === 'development' && moveHistory.length > 0 && (
+        <div style={{ 
+          position: 'fixed', 
+          top: '10px', 
+          right: '10px', 
+          background: 'rgba(0,0,0,0.8)', 
+          color: 'white', 
+          padding: '10px', 
+          fontSize: '10px',
+          maxWidth: '200px',
+          maxHeight: '200px',
+          overflow: 'auto'
+        }}>
+          <strong>Move History:</strong>
+          {moveHistory.slice(-5).map((move, i) => (
+            <div key={i}>
+              {move.word} - {move.score}pts
+            </div>
+          ))}
         </div>
       )}
     </div>
