@@ -820,11 +820,12 @@ body {
     inset 0 1px 2px rgba(255,255,255,0.1);
 }
 
-/* Found words with fixed positioning */
+/* Found words with ALWAYS FIXED positioning to prevent grid movement */
 .found-words {
-  position: absolute;
-  right: -200px;
-  top: 0;
+  position: fixed;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 180px;
   height: 300px;
   max-height: 300px;
@@ -834,19 +835,26 @@ body {
   padding: 12px;
   overflow-y: auto;
   box-shadow: 0 4px 12px var(--shadow-dark);
-  /* CRITICAL: Fixed positioning */
+  z-index: 10;
+  /* CRITICAL: Always fixed positioning to prevent ANY grid movement */
   flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
   .found-words {
-    position: static;
-    right: auto;
-    width: 100%;
-    max-width: 320px;
-    height: 150px;
-    margin-top: 16px;
+    /* FIXED positioning even on mobile to prevent grid movement */
+    position: fixed;
+    right: 10px;
+    bottom: 90px; /* Above the bottom status panel */
+    top: auto;
+    transform: none;
+    width: 150px;
+    max-width: 150px;
+    height: 200px;
+    max-height: 200px;
+    z-index: 15;
   }
+}
   
   .letter-grid {
     width: min(85vw, 75vh, 400px);

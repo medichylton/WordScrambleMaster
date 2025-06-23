@@ -25,7 +25,7 @@ function ChallengeSelection() {
       name: 'QUICK BLITZ',
       description: 'Fast-paced word hunting',
       icon: '⚡',
-      targetScore: 75,
+      targetScore: 30,
       timeLimit: 90,
       coinReward: 15,
       color: 'var(--pyxel-yellow)'
@@ -35,7 +35,7 @@ function ChallengeSelection() {
       name: 'WORD MASTER',
       description: 'Balanced challenge',
       icon: '🎯',
-      targetScore: 150,
+      targetScore: 50,
       timeLimit: 120,
       coinReward: 25,
       color: 'var(--pyxel-blue)'
@@ -45,7 +45,7 @@ function ChallengeSelection() {
       name: 'ULTIMATE TEST',
       description: 'Maximum difficulty',
       icon: '👑',
-      targetScore: 250,
+      targetScore: 75,
       timeLimit: 180,
       coinReward: 50,
       color: 'var(--pyxel-red)'
