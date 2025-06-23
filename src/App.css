@@ -820,41 +820,9 @@ body {
     inset 0 1px 2px rgba(255,255,255,0.1);
 }
 
-/* Found words with ALWAYS FIXED positioning to prevent grid movement */
-.found-words {
-  position: fixed;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 180px;
-  height: 300px;
-  max-height: 300px;
-  background: var(--pyxel-dark-blue);
-  border: 2px solid var(--pyxel-blue);
-  border-radius: 8px;
-  padding: 12px;
-  overflow-y: auto;
-  box-shadow: 0 4px 12px var(--shadow-dark);
-  z-index: 10;
-  /* CRITICAL: Always fixed positioning to prevent ANY grid movement */
-  flex-shrink: 0;
-}
+/* Removed found-words list - no longer needed */
 
 @media (max-width: 768px) {
-  .found-words {
-    /* FIXED positioning even on mobile to prevent grid movement */
-    position: fixed;
-    right: 10px;
-    bottom: 90px; /* Above the bottom status panel */
-    top: auto;
-    transform: none;
-    width: 150px;
-    max-width: 150px;
-    height: 200px;
-    max-height: 200px;
-    z-index: 15;
-  }
-  
   .letter-grid {
     width: min(85vw, 75vh, 400px);
     height: min(85vw, 75vh, 400px);

@@ -335,27 +335,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
         </button>
       </div>
 
-      {allFoundWords.length > 0 && (
-        <div className="found-words">
-          <div style={{ 
-            color: 'var(--pyxel-yellow)', 
-            fontSize: 'clamp(8px, 2vw, 10px)', 
-            marginBottom: '8px',
-            textAlign: 'center',
-            fontWeight: 'bold'
-          }}>
-            FOUND WORDS ({allFoundWords.length})
-          </div>
-          {allFoundWords.map((word, index) => (
-            <div key={index} className="word-item">
-              <span>{word.toUpperCase()}</span>
-              <span style={{ color: 'var(--pyxel-yellow)' }}>
-                {calculateWordScore(word, 1)}pts
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+
 
       {/* Move History Debug (can be removed in production) */}
       {process.env.NODE_ENV === 'development' && moveHistory.length > 0 && (
