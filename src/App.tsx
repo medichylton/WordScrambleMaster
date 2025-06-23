@@ -27,8 +27,17 @@ function AppContent() {
     
     // iOS PWA viewport fix
     const setViewportHeight = () => {
+      // Use the full window height - safe areas will be handled by CSS
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
+      
+      // Also set safe area values for debugging
+      const safeTop = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-top') || '0px';
+      const safeBottom = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom') || '0px';
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Viewport height:', window.innerHeight, 'Safe areas:', safeTop, safeBottom);
+      }
     };
     
     // Set initial height

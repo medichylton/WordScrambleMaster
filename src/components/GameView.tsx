@@ -279,27 +279,27 @@ function PlayingChallenge() {
   
   return (
     <div style={{ 
-      width: '100vw',
-      height: '100vh', 
+      width: '100%',
+      height: '100%', 
       display: 'flex',
       flexDirection: 'column',
       background: 'var(--pyxel-black)',
-      position: 'fixed',
-      top: 0,
-      left: 0,
       overflow: 'hidden'
     }}>
-      {/* Top Header - INCREASED HEIGHT TO PREVENT CUTOFF */}
+      {/* Top Header - INCREASED HEIGHT TO PREVENT CUTOFF + Safe Area */}
       <div style={{
-        height: '60px',
+        height: '70px',
         background: 'var(--gradient-primary)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 12px',
+        padding: '8px 12px',
         borderBottom: '3px solid var(--pyxel-dark-grey)',
         zIndex: 2,
-        flexShrink: 0
+        flexShrink: 0,
+        /* Additional safe area padding for Dynamic Island */
+        paddingTop: 'max(8px, env(safe-area-inset-top, 0px))',
+        minHeight: '70px'
       }}>
         <div style={{
           fontSize: 'clamp(7px, 1.8vw, 9px)',
@@ -417,7 +417,7 @@ function PlayingChallenge() {
 
       {/* Bottom Status Panel - Horizontal layout of all the sidebar info */}
       <div style={{
-        height: '80px',
+        minHeight: '80px',
         background: 'var(--gradient-primary)',
         display: 'flex',
         alignItems: 'center',
@@ -425,7 +425,9 @@ function PlayingChallenge() {
         padding: '12px 16px',
         borderTop: '3px solid var(--pyxel-dark-grey)',
         zIndex: 2,
-        flexShrink: 0
+        flexShrink: 0,
+        /* Additional safe area padding for home indicator */
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))'
       }}>
         {/* Challenge Info */}
         <div style={{
