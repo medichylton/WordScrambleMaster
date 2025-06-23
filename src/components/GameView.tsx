@@ -9,6 +9,7 @@ export function GameView() {
     <div className="game-interface">
       {gameState.gamePhase === 'selectingChallenge' && <ChallengeSelection />}
       {gameState.gamePhase === 'playingChallenge' && <PlayingChallenge />}
+      {gameState.gamePhase === 'shopping' && <ShopView />}
       {gameState.gamePhase === 'gameOver' && <GameOver />}
       {gameState.gamePhase === 'victory' && <Victory />}
     </div>
@@ -216,7 +217,18 @@ function PlayingChallenge() {
   
   const handleWordFound = (word: string, score: number) => {
     setWordsFound(prev => [...prev, word]);
-    setCurrentScore(prev => prev + score);
+    setCurrentScore(prev => {
+      const newScore = prev + score;
+      // Check if we've reached the target score
+      const targetScore = gameState.currentChallenge?.targetScore || 500;
+      if (newScore >= targetScore) {
+        // Delay completion slightly to show the final score
+        setTimeout(() => {
+          handleChallengeComplete(newScore);
+        }, 1000);
+      }
+      return newScore;
+    });
     
     // Enhanced score bonus animation based on word length and score
     setShowScoreBonus(score);
@@ -234,16 +246,17 @@ function PlayingChallenge() {
     setCurrentWord(word);
   };
   
-  const handleChallengeComplete = () => {
+  const handleChallengeComplete = (finalScore?: number) => {
+    const scoreToUse = finalScore || currentScore;
     const targetScore = gameState.currentChallenge?.targetScore || 500;
     const coinReward = gameState.currentChallenge?.coinReward || 20;
     
-    if (currentScore >= targetScore) {
+    if (scoreToUse >= targetScore) {
       dispatch({ 
         type: 'COMPLETE_CHALLENGE', 
         payload: { 
-          score: currentScore, 
-          coins: coinReward + Math.floor(currentScore / 100)
+          score: scoreToUse, 
+          coins: coinReward + Math.floor(scoreToUse / 100)
         } 
       });
     } else {
@@ -750,6 +763,203 @@ function Victory() {
           🏠 MAIN MENU
         </button>
       </div>
+    </div>
+  );
+}
+
+function ShopView() {
+  const { gameState, dispatch } = useGame();
+  
+  const shopItems = [
+    {
+      id: 'score_boost',
+      name: 'Score Booster',
+      description: 'Double points for next challenge',
+      icon: '⚡',
+      cost: 25,
+      type: 'powerup'
+    },
+    {
+      id: 'time_extend',
+      name: 'Time Extender',
+      description: '+30 seconds for next challenge',
+      icon: '⏰',
+      cost: 20,
+      type: 'powerup'
+    },
+    {
+      id: 'word_hint',
+      name: 'Word Revealer',
+      description: 'Reveals 3 valid words',
+      icon: '💡',
+      cost: 15,
+      type: 'powerup'
+    },
+    {
+      id: 'letter_glow',
+      name: 'Letter Enhancer',
+      description: 'Highlights high-value letters',
+      icon: '✨',
+      cost: 10,
+      type: 'powerup'
+    }
+  ];
+  
+  const handlePurchase = (item: any) => {
+    if (gameState.coins >= item.cost) {
+      dispatch({
+        type: 'PURCHASE_POWERUP',
+        payload: item
+      });
+    }
+  };
+  
+  const handleContinue = () => {
+    dispatch({ type: 'LEAVE_SHOP' });
+  };
+  
+  return (
+    <div style={{
+      width: '100%',
+      height: '100%',
+      background: '#000000',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Animated background elements */}
+      <div style={{
+        position: 'absolute',
+        top: '15%',
+        left: '15%',
+        width: '12px',
+        height: '12px',
+        background: 'var(--pyxel-yellow)',
+        borderRadius: '50%',
+        animation: 'pixelFloat 4s ease-in-out infinite',
+        opacity: 0.4
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '25%',
+        right: '20%',
+        width: '8px',
+        height: '8px',
+        background: 'var(--glow-green)',
+        borderRadius: '50%',
+        animation: 'pixelFloat 3s ease-in-out infinite reverse',
+        opacity: 0.4
+      }} />
+      
+      <div className="modal-title" style={{
+        marginBottom: '20px',
+        fontSize: 'clamp(14px, 5vw, 20px)',
+        color: 'var(--pyxel-yellow)',
+        textAlign: 'center',
+        animation: 'titlePulse 2s ease-in-out infinite'
+      }}>
+        🏪 POWER-UP SHOP 🏪
+      </div>
+      
+      <div style={{
+        fontSize: 'clamp(10px, 3vw, 14px)',
+        color: 'var(--pyxel-green)',
+        marginBottom: '20px',
+        textAlign: 'center'
+      }}>
+        💰 Coins: {gameState.coins}
+      </div>
+      
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '16px',
+        width: '100%',
+        maxWidth: '600px',
+        marginBottom: '20px'
+      }}>
+        {shopItems.map((item, index) => (
+          <div
+            key={item.id}
+            className="difficulty-button"
+            onClick={() => handlePurchase(item)}
+            style={{
+              background: gameState.coins >= item.cost ? 'var(--gradient-secondary)' : 'var(--pyxel-dark-grey)',
+              borderColor: gameState.coins >= item.cost ? 'var(--pyxel-green)' : 'var(--pyxel-red)',
+              cursor: gameState.coins >= item.cost ? 'pointer' : 'not-allowed',
+              opacity: gameState.coins >= item.cost ? 1 : 0.6,
+              animationDelay: `${index * 0.1}s`,
+              minHeight: '120px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{
+              fontSize: '24px',
+              marginBottom: '8px',
+              filter: 'drop-shadow(2px 2px 0px rgba(0,0,0,0.5))'
+            }}>
+              {item.icon}
+            </div>
+            
+            <div style={{
+              fontSize: 'clamp(8px, 2.5vw, 10px)',
+              marginBottom: '4px',
+              fontWeight: 'bold'
+            }}>
+              {item.name}
+            </div>
+            
+            <div style={{
+              fontSize: 'clamp(6px, 2vw, 8px)',
+              opacity: 0.8,
+              marginBottom: '8px',
+              lineHeight: 1.2
+            }}>
+              {item.description}
+            </div>
+            
+            <div style={{
+              fontSize: 'clamp(8px, 2.5vw, 10px)',
+              color: gameState.coins >= item.cost ? 'var(--pyxel-yellow)' : 'var(--pyxel-red)',
+              fontWeight: 'bold'
+            }}>
+              💰 {item.cost}
+            </div>
+            
+            {gameState.coins < item.cost && (
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                fontSize: 'clamp(6px, 2vw, 8px)',
+                color: 'var(--pyxel-red)',
+                fontWeight: 'bold',
+                textShadow: '1px 1px 0px var(--pyxel-black)'
+              }}>
+                INSUFFICIENT COINS
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      <button
+        onClick={handleContinue}
+        className="menu-button"
+        style={{
+          background: 'var(--gradient-accent)',
+          borderColor: 'var(--pyxel-blue)',
+          marginTop: '20px'
+        }}
+      >
+        🚀 CONTINUE ADVENTURE
+      </button>
     </div>
   );
 }
