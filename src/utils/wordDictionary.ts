@@ -176,17 +176,19 @@ export function generateBoggleGrid(): string[][] {
 export function calculateWordScore(word: string, timeBonus: number = 1, difficulty: 'easy' | 'medium' | 'hard' = 'medium'): number {
   const length = word.length;
   
-  // Traditional Boggle scoring system (from the repository)
+  // More generous scoring system for easier gameplay
   let baseScore = 0;
-  if (length >= 3 && length <= 5) baseScore = 2;      // 3-5 letters: 2 points
-  else if (length === 6) baseScore = 3;               // 6 letters: 3 points  
-  else if (length === 7) baseScore = 5;               // 7 letters: 5 points
-  else if (length >= 8) baseScore = 11;               // 8+ letters: 11 points
-  else return 0; // Words less than 3 letters get 0 points
+  if (length === 2) baseScore = 3;                    // 2 letters: 3 points (new!)
+  else if (length >= 3 && length <= 4) baseScore = 5; // 3-4 letters: 5 points (increased)
+  else if (length === 5) baseScore = 8;               // 5 letters: 8 points (increased)
+  else if (length === 6) baseScore = 12;              // 6 letters: 12 points (increased)  
+  else if (length === 7) baseScore = 18;              // 7 letters: 18 points (increased)
+  else if (length >= 8) baseScore = 25;               // 8+ letters: 25 points (increased)
+  else return 0; // Words less than 2 letters get 0 points
   
-  // Difficulty multiplier
+  // Easier difficulty multipliers
   const difficultyMultiplier = {
-    'easy': 1,
+    'easy': 1.2,
     'medium': 1.5,
     'hard': 2
   }[difficulty];
@@ -197,7 +199,7 @@ export function calculateWordScore(word: string, timeBonus: number = 1, difficul
   // Final score calculation
   const finalScore = Math.floor(baseScore * difficultyMultiplier * rarityBonus * timeBonus);
   
-  return Math.max(finalScore, 1); // Minimum 1 point
+  return Math.max(finalScore, 3); // Minimum 3 points (increased)
 }
 
 function getRarityBonus(word: string): number {

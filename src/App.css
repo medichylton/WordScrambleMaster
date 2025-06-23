@@ -371,15 +371,15 @@ body {
   50% { transform: scale(1.1); }
 }
 
-/* Enhanced letter grid with FIXED dimensions */
+/* Enhanced letter grid with MUCH BIGGER dimensions */
 .letter-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(4, 1fr);
-  gap: clamp(8px, 2vw, 12px);
-  width: 320px;
-  height: 320px;
-  padding: 16px;
+  gap: clamp(12px, 3vw, 18px);
+  width: min(90vw, 85vh, 500px);
+  height: min(90vw, 85vh, 500px);
+  padding: 20px;
   margin: 0 auto;
   background: var(--pyxel-black);
   border: 3px solid var(--pyxel-dark-grey);
@@ -421,20 +421,20 @@ body {
 }
 
 .letter-cell {
-  /* CRITICAL: Fixed aspect ratio and dimensions */
+  /* BIGGER cells for better touch experience */
   width: 100%;
   height: 100%;
   aspect-ratio: 1;
-  min-width: 60px;
-  min-height: 60px;
-  max-width: 80px;
-  max-height: 80px;
+  min-width: 80px;
+  min-height: 80px;
+  max-width: 110px;
+  max-height: 110px;
   background: var(--gradient-secondary);
   color: var(--pyxel-white);
   border: 2px solid var(--pyxel-green);
   border-radius: 8px;
   font-family: 'Press Start 2P', monospace;
-  font-size: clamp(12px, 4vw, 18px);
+  font-size: clamp(16px, 5vw, 24px);
   font-weight: bold;
   cursor: pointer;
   display: flex;
@@ -849,15 +849,18 @@ body {
   }
   
   .letter-grid {
-    width: 280px;
-    height: 280px;
+    width: min(85vw, 75vh, 400px);
+    height: min(85vw, 75vh, 400px);
+    gap: clamp(10px, 2.5vw, 15px);
+    padding: 16px;
   }
   
   .letter-cell {
-    min-width: 50px;
-    min-height: 50px;
-    max-width: 70px;
-    max-height: 70px;
+    min-width: 70px;
+    min-height: 70px;
+    max-width: 95px;
+    max-height: 95px;
+    font-size: clamp(14px, 4.5vw, 20px);
   }
 }
 
@@ -1198,11 +1201,20 @@ body {
   50% { opacity: 0.7; }
 }
 
-/* Responsive breakpoints */
+/* Responsive breakpoints - Updated for bigger grid */
 @media (max-width: 360px) {
+  .letter-grid {
+    width: min(82vw, 70vh, 350px);
+    height: min(82vw, 70vh, 350px);
+    gap: clamp(8px, 2vw, 12px);
+  }
+  
   .letter-cell {
-    min-height: 50px;
-    font-size: 14px;
+    min-width: 65px;
+    min-height: 65px;
+    max-width: 85px;
+    max-height: 85px;
+    font-size: clamp(12px, 4vw, 18px);
   }
   
   .menu-button {
@@ -1216,18 +1228,30 @@ body {
 }
 
 @media (min-width: 361px) and (max-width: 480px) {
+  .letter-grid {
+    width: min(85vw, 75vh, 380px);
+    height: min(85vw, 75vh, 380px);
+  }
+  
   .letter-cell {
-    min-height: 65px;
+    min-width: 72px;
+    min-height: 72px;
+    max-width: 92px;
+    max-height: 92px;
   }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
-  .letter-cell {
-    min-height: 70px;
+  .letter-grid {
+    width: min(85vw, 80vh, 420px);
+    height: min(85vw, 80vh, 420px);
   }
   
-  .letter-grid {
-    max-width: 320px;
+  .letter-cell {
+    min-width: 75px;
+    min-height: 75px;
+    max-width: 100px;
+    max-height: 100px;
   }
 }
 

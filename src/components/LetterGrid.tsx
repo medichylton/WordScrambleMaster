@@ -43,7 +43,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
         return;
       }
       
-      if (word.length >= 3) {
+      if (word.length >= 2) {
         // Check if word was already found
         if (allFoundWords.includes(word)) {
           setWordValidationStatus('already-found');
@@ -163,7 +163,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
   };
 
   const processWordSubmission = async () => {
-    if (currentWord.length >= 3 && !allFoundWords.includes(currentWord)) {
+    if (currentWord.length >= 2 && !allFoundWords.includes(currentWord)) {
       // Validate path first
       if (!isValidPath(grid, selectedPath)) {
         // Error haptic feedback for invalid path
@@ -245,7 +245,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
   };
 
   const submitWord = async () => {
-    if (currentWord.length >= 3 && !allFoundWords.includes(currentWord)) {
+    if (currentWord.length >= 2 && !allFoundWords.includes(currentWord)) {
       await processWordSubmission();
     }
     
@@ -255,7 +255,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
   };
 
   const getWordValidationClass = () => {
-    if (currentWord.length < 3) return '';
+    if (currentWord.length < 2) return '';
     
     // Check path validity first
     if (selectedPath.length > 0 && !isValidPath(grid, selectedPath)) {
@@ -323,7 +323,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
         <button 
           onClick={submitWord} 
           className="action-button"
-          disabled={currentWord.length < 3 || allFoundWords.includes(currentWord) || wordValidationStatus === 'invalid' || (selectedPath.length > 0 && !isValidPath(grid, selectedPath))}
+          disabled={currentWord.length < 2 || allFoundWords.includes(currentWord) || wordValidationStatus === 'invalid' || (selectedPath.length > 0 && !isValidPath(grid, selectedPath))}
         >
           SUBMIT
         </button>

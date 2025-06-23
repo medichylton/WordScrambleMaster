@@ -25,7 +25,7 @@ function ChallengeSelection() {
       name: 'QUICK BLITZ',
       description: 'Fast-paced word hunting',
       icon: '⚡',
-      targetScore: 300,
+      targetScore: 75,
       timeLimit: 90,
       coinReward: 15,
       color: 'var(--pyxel-yellow)'
@@ -35,7 +35,7 @@ function ChallengeSelection() {
       name: 'WORD MASTER',
       description: 'Balanced challenge',
       icon: '🎯',
-      targetScore: 500,
+      targetScore: 150,
       timeLimit: 120,
       coinReward: 25,
       color: 'var(--pyxel-blue)'
@@ -45,7 +45,7 @@ function ChallengeSelection() {
       name: 'ULTIMATE TEST',
       description: 'Maximum difficulty',
       icon: '👑',
-      targetScore: 800,
+      targetScore: 250,
       timeLimit: 180,
       coinReward: 50,
       color: 'var(--pyxel-red)'
@@ -282,280 +282,252 @@ function PlayingChallenge() {
       width: '100vw',
       height: '100vh', 
       display: 'flex',
+      flexDirection: 'column',
       background: 'var(--pyxel-black)',
       position: 'fixed',
       top: 0,
       left: 0,
       overflow: 'hidden'
     }}>
-      {/* Left Side - Vertical Progress Bar and Info */}
+      {/* Top Header - INCREASED HEIGHT TO PREVENT CUTOFF */}
       <div style={{
-        width: '80px',
-        height: '100vh',
+        height: '60px',
         background: 'var(--gradient-primary)',
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
-        padding: '12px 8px',
-        borderRight: '3px solid var(--pyxel-dark-grey)',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        zIndex: 1
+        justifyContent: 'space-between',
+        padding: '0 12px',
+        borderBottom: '3px solid var(--pyxel-dark-grey)',
+        zIndex: 2,
+        flexShrink: 0
+      }}>
+        <div style={{
+          fontSize: 'clamp(7px, 1.8vw, 9px)',
+          color: 'var(--pyxel-light-grey)',
+          width: '70px',
+          textAlign: 'left',
+          lineHeight: 1.2
+        }}>
+          💰 {gameState.coins}
+        </div>
+        
+        {/* MASSIVE Score Display */}
+        <div style={{ 
+          position: 'relative',
+          fontSize: 'clamp(14px, 4.5vw, 22px)',
+          color: 'var(--pyxel-yellow)',
+          fontWeight: 'bold',
+          textShadow: '2px 2px 4px var(--pyxel-black), 0 0 10px var(--pyxel-yellow)',
+          textAlign: 'center',
+          minWidth: '90px',
+          lineHeight: 1
+        }}>
+          {currentScore}
+          {showScoreBonus && (
+            <div style={{
+              position: 'absolute',
+              top: '-25px',
+              right: '-10px',
+              color: 'var(--glow-green)',
+              fontSize: 'clamp(10px, 2.5vw, 14px)',
+              animation: 'scoreBonus 1s ease-out forwards',
+              pointerEvents: 'none',
+              textShadow: '0 0 10px var(--glow-green)'
+            }}>
+              +{showScoreBonus}
+            </div>
+          )}
+        </div>
+
+        <div style={{
+          fontSize: 'clamp(7px, 1.8vw, 9px)',
+          color: 'var(--pyxel-light-grey)',
+          width: '70px',
+          textAlign: 'right',
+          lineHeight: 1.2
+        }}>
+          🎯 {gameState.currentChallenge?.targetScore}
+        </div>
+      </div>
+
+      {/* Current Word Display - FIXED HEIGHT */}
+      <div style={{
+        height: '50px',
+        background: 'var(--pyxel-dark-blue)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderBottom: '2px solid var(--pyxel-dark-grey)',
+        zIndex: 2,
+        overflow: 'hidden',
+        flexShrink: 0
+      }}>
+        <div className={`current-word ${currentWord.length >= 2 ? 
+          (wordsFound.includes(currentWord) ? 'already-found' : 
+           currentWord.length >= 2 ? 'valid' : '') : ''} ${getWordLengthClass(currentWord)}`} 
+          style={{
+            fontSize: 'clamp(12px, 4vw, 18px)',
+            fontWeight: 'bold',
+            height: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            maxWidth: '90%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+          {currentWord || 'Swipe to form words...'}
+          {/* Word length indicator */}
+          {currentWord.length >= 3 && (
+            <span style={{
+              marginLeft: '8px',
+              fontSize: 'clamp(8px, 2vw, 10px)',
+              opacity: 0.8,
+              color: currentWord.length >= 8 ? 'var(--glow-pink)' : 
+                     currentWord.length === 7 ? 'var(--glow-green)' :
+                     currentWord.length === 6 ? 'var(--pyxel-yellow)' : 'var(--pyxel-orange)',
+              flexShrink: 0
+            }}>
+              ({currentWord.length})
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Letter Grid - MUCH BIGGER NOW - Takes most of the screen */}
+      <div style={{ 
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        zIndex: 1,
+        minHeight: 0
+      }}>
+        <LetterGrid 
+          onWordFound={handleWordFound}
+          onScoreUpdate={handleScoreUpdate}
+          onCurrentWordChange={handleCurrentWordChange}
+          timeRemaining={timeRemaining}
+          hideWordDisplay={true}
+          foundWords={wordsFound}
+        />
+      </div>
+
+      {/* Bottom Status Panel - Horizontal layout of all the sidebar info */}
+      <div style={{
+        height: '80px',
+        background: 'var(--gradient-primary)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        padding: '12px 16px',
+        borderTop: '3px solid var(--pyxel-dark-grey)',
+        zIndex: 2,
+        flexShrink: 0
       }}>
         {/* Challenge Info */}
         <div style={{
-          writing: 'vertical-rl' as any,
-          textOrientation: 'mixed',
-          fontSize: 'clamp(8px, 2vw, 10px)',
-          color: 'var(--pyxel-yellow)',
-          marginBottom: '16px',
           textAlign: 'center',
-          fontWeight: 'bold'
-        }}>
-          {gameState.currentChallenge?.name || 'CHALLENGE'}
-        </div>
-
-        {/* Vertical Progress Bar */}
-        <div style={{
-          width: '20px',
-          height: '200px',
-          background: 'var(--pyxel-dark-grey)',
-          border: '2px solid var(--pyxel-light-grey)',
-          borderRadius: '10px',
-          position: 'relative',
-          overflow: 'hidden',
-          marginBottom: '16px'
+          flex: 1
         }}>
           <div style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: `${getProgressPercentage()}%`,
-            background: getProgressPercentage() >= 100 
-              ? 'var(--glow-green)' 
-              : 'linear-gradient(to top, var(--pyxel-red), var(--pyxel-orange), var(--pyxel-yellow), var(--pyxel-green))',
-            transition: 'height 0.5s ease',
-            borderRadius: '8px',
-            boxShadow: getProgressPercentage() >= 100 
-              ? '0 0 20px var(--glow-green)' 
-              : '0 0 10px rgba(255,236,39,0.5)'
-          }} />
-          
-          {/* Progress Text */}
-          <div style={{
-            position: 'absolute',
-            top: '-25px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            fontSize: '8px',
-            color: 'var(--pyxel-white)',
-            fontWeight: 'bold',
-            textShadow: '1px 1px 2px var(--pyxel-black)'
+            fontSize: 'clamp(6px, 1.5vw, 8px)',
+            color: 'var(--pyxel-light-grey)',
+            marginBottom: '4px'
           }}>
-            {Math.round(getProgressPercentage())}%
+            CHALLENGE
+          </div>
+          <div style={{
+            fontSize: 'clamp(8px, 2vw, 10px)',
+            color: 'var(--pyxel-yellow)',
+            fontWeight: 'bold'
+          }}>
+            {gameState.currentChallenge?.name || 'CHALLENGE'}
           </div>
         </div>
 
-        {/* Target Score */}
+        {/* Progress - Horizontal Bar */}
         <div style={{
-          fontSize: 'clamp(6px, 1.5vw, 8px)',
-          color: 'var(--pyxel-light-grey)',
           textAlign: 'center',
-          marginBottom: '8px'
+          flex: 2
         }}>
-          TARGET
-        </div>
-        <div style={{
-          fontSize: 'clamp(8px, 2vw, 10px)',
-          color: 'var(--pyxel-yellow)',
-          textAlign: 'center',
-          fontWeight: 'bold',
-          marginBottom: '16px'
-        }}>
-          {gameState.currentChallenge?.targetScore}
+          <div style={{
+            fontSize: 'clamp(6px, 1.5vw, 8px)',
+            color: 'var(--pyxel-light-grey)',
+            marginBottom: '4px'
+          }}>
+            PROGRESS {Math.round(getProgressPercentage())}%
+          </div>
+          <div style={{
+            width: '100%',
+            height: '12px',
+            background: 'var(--pyxel-dark-grey)',
+            border: '2px solid var(--pyxel-light-grey)',
+            borderRadius: '6px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: `${getProgressPercentage()}%`,
+              background: getProgressPercentage() >= 100 
+                ? 'var(--glow-green)' 
+                : 'linear-gradient(to right, var(--pyxel-red), var(--pyxel-orange), var(--pyxel-yellow), var(--pyxel-green))',
+              transition: 'width 0.5s ease',
+              borderRadius: '4px',
+              boxShadow: getProgressPercentage() >= 100 
+                ? '0 0 10px var(--glow-green)' 
+                : '0 0 5px rgba(255,236,39,0.5)'
+            }} />
+          </div>
         </div>
 
         {/* Words Found Count */}
         <div style={{
-          fontSize: 'clamp(6px, 1.5vw, 8px)',
-          color: 'var(--pyxel-light-grey)',
           textAlign: 'center',
-          marginBottom: '4px'
+          flex: 1
         }}>
-          WORDS
-        </div>
-        <div style={{
-          fontSize: 'clamp(10px, 2.5vw, 12px)',
-          color: 'var(--pyxel-green)',
-          textAlign: 'center',
-          fontWeight: 'bold',
-          marginBottom: '16px'
-        }}>
-          {wordsFound.length}
+          <div style={{
+            fontSize: 'clamp(6px, 1.5vw, 8px)',
+            color: 'var(--pyxel-light-grey)',
+            marginBottom: '4px'
+          }}>
+            WORDS
+          </div>
+          <div style={{
+            fontSize: 'clamp(10px, 2.5vw, 12px)',
+            color: 'var(--pyxel-green)',
+            fontWeight: 'bold'
+          }}>
+            {wordsFound.length}
+          </div>
         </div>
 
         {/* Time Remaining */}
         <div style={{
-          fontSize: 'clamp(6px, 1.5vw, 8px)',
-          color: 'var(--pyxel-light-grey)',
           textAlign: 'center',
-          marginBottom: '4px'
-        }}>
-          TIME
-        </div>
-        <div style={{
-          fontSize: 'clamp(8px, 2vw, 10px)',
-          color: getTimeColor(),
-          textAlign: 'center',
-          fontWeight: 'bold',
-          textShadow: `0 0 8px ${getTimeColor()}`
-        }}>
-          {formatTime(timeRemaining)}
-        </div>
-      </div>
-
-      {/* Right Side - Game Area with ABSOLUTELY FIXED POSITIONS */}
-      <div style={{ 
-        position: 'fixed',
-        left: '80px',
-        top: 0,
-        width: 'calc(100vw - 80px)',
-        height: '100vh',
-        background: 'var(--pyxel-black)',
-        zIndex: 0
-      }}>
-        {/* Top Header - FIXED HEIGHT AND POSITION */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '60px',
-          background: 'var(--gradient-primary)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 16px',
-          borderBottom: '3px solid var(--pyxel-dark-grey)',
-          zIndex: 2
+          flex: 1
         }}>
           <div style={{
-            fontSize: 'clamp(8px, 2vw, 10px)',
+            fontSize: 'clamp(6px, 1.5vw, 8px)',
             color: 'var(--pyxel-light-grey)',
-            width: '80px',
-            textAlign: 'left'
+            marginBottom: '4px'
           }}>
-            💰 {gameState.coins}
+            TIME
           </div>
-          
-          {/* MASSIVE Score Display - FIXED POSITION */}
-          <div style={{ 
-            position: 'relative',
-            fontSize: 'clamp(16px, 5vw, 24px)',
-            color: 'var(--pyxel-yellow)',
+          <div style={{
+            fontSize: 'clamp(8px, 2vw, 10px)',
+            color: getTimeColor(),
             fontWeight: 'bold',
-            textShadow: '2px 2px 4px var(--pyxel-black), 0 0 10px var(--pyxel-yellow)',
-            textAlign: 'center',
-            minWidth: '100px'
+            textShadow: `0 0 8px ${getTimeColor()}`
           }}>
-            {currentScore}
-            {showScoreBonus && (
-              <div style={{
-                position: 'absolute',
-                top: '-30px',
-                right: '-10px',
-                color: 'var(--glow-green)',
-                fontSize: 'clamp(12px, 3vw, 16px)',
-                animation: 'scoreBonus 1s ease-out forwards',
-                pointerEvents: 'none',
-                textShadow: '0 0 10px var(--glow-green)'
-              }}>
-                +{showScoreBonus}
-              </div>
-            )}
+            {formatTime(timeRemaining)}
           </div>
-
-          <div style={{
-            fontSize: 'clamp(8px, 2vw, 10px)',
-            color: 'var(--pyxel-light-grey)',
-            width: '80px',
-            textAlign: 'right'
-          }}>
-            🎯 {gameState.currentChallenge?.targetScore}
-          </div>
-        </div>
-
-        {/* Current Word Display - FIXED HEIGHT AND POSITION */}
-        <div style={{
-          position: 'absolute',
-          top: '60px',
-          left: 0,
-          right: 0,
-          height: '50px',
-          background: 'var(--pyxel-dark-blue)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderBottom: '2px solid var(--pyxel-dark-grey)',
-          zIndex: 2,
-          overflow: 'hidden'
-        }}>
-          <div className={`current-word ${currentWord.length >= 2 ? 
-            (wordsFound.includes(currentWord) ? 'already-found' : 
-             currentWord.length >= 2 ? 'valid' : '') : ''} ${getWordLengthClass(currentWord)}`} 
-            style={{
-              fontSize: 'clamp(12px, 4vw, 18px)',
-              fontWeight: 'bold',
-              height: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              maxWidth: '90%',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>
-            {currentWord || 'Swipe to form words...'}
-            {/* Word length indicator */}
-            {currentWord.length >= 3 && (
-              <span style={{
-                marginLeft: '8px',
-                fontSize: 'clamp(8px, 2vw, 10px)',
-                opacity: 0.8,
-                color: currentWord.length >= 8 ? 'var(--glow-pink)' : 
-                       currentWord.length === 7 ? 'var(--glow-green)' :
-                       currentWord.length === 6 ? 'var(--pyxel-yellow)' : 'var(--pyxel-orange)',
-                flexShrink: 0
-              }}>
-                ({currentWord.length})
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Letter Grid - ABSOLUTELY FIXED POSITION */}
-        <div style={{ 
-          position: 'absolute',
-          top: '110px',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '8px',
-          zIndex: 1
-        }}>
-          <LetterGrid 
-            onWordFound={handleWordFound}
-            onScoreUpdate={handleScoreUpdate}
-            onCurrentWordChange={handleCurrentWordChange}
-            timeRemaining={timeRemaining}
-            hideWordDisplay={true}
-            foundWords={wordsFound}
-          />
         </div>
       </div>
       
