@@ -291,7 +291,7 @@ function PlayingChallenge() {
     }}>
       {/* Top Header - Extends behind Dynamic Island */}
       <div style={{
-        background: 'var(--gradient-primary)',
+        background: 'var(--pyxel-black)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -357,7 +357,7 @@ function PlayingChallenge() {
       {/* Current Word Display - FIXED HEIGHT */}
       <div style={{
         height: '50px',
-        background: 'var(--pyxel-dark-blue)',
+        background: 'var(--pyxel-black)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -405,9 +405,11 @@ function PlayingChallenge() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px',
+        padding: '20px',
         zIndex: 1,
-        minHeight: 0
+        minHeight: 0,
+        /* Ensure perfect centering */
+        flexDirection: 'column'
       }}>
         <LetterGrid 
           onWordFound={handleWordFound}
@@ -421,7 +423,7 @@ function PlayingChallenge() {
 
       {/* Bottom Status Panel - Extends behind home indicator using full space */}
       <div style={{
-        background: 'var(--gradient-primary)',
+        background: 'var(--pyxel-black)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
@@ -441,14 +443,14 @@ function PlayingChallenge() {
           flex: 1
         }}>
           <div style={{
-            fontSize: 'clamp(6px, 1.5vw, 8px)',
+            fontSize: 'clamp(8px, 2vw, 10px)',
             color: 'var(--pyxel-light-grey)',
             marginBottom: '4px'
           }}>
             CHALLENGE
           </div>
           <div style={{
-            fontSize: 'clamp(8px, 2vw, 10px)',
+            fontSize: 'clamp(10px, 2.5vw, 12px)',
             color: 'var(--pyxel-yellow)',
             fontWeight: 'bold'
           }}>
@@ -462,7 +464,7 @@ function PlayingChallenge() {
           flex: 2
         }}>
           <div style={{
-            fontSize: 'clamp(6px, 1.5vw, 8px)',
+            fontSize: 'clamp(8px, 2vw, 10px)',
             color: 'var(--pyxel-light-grey)',
             marginBottom: '4px'
           }}>
@@ -501,14 +503,14 @@ function PlayingChallenge() {
           flex: 1
         }}>
           <div style={{
-            fontSize: 'clamp(6px, 1.5vw, 8px)',
+            fontSize: 'clamp(8px, 2vw, 10px)',
             color: 'var(--pyxel-light-grey)',
             marginBottom: '4px'
           }}>
             WORDS
           </div>
           <div style={{
-            fontSize: 'clamp(10px, 2.5vw, 12px)',
+            fontSize: 'clamp(12px, 3vw, 14px)',
             color: 'var(--pyxel-green)',
             fontWeight: 'bold'
           }}>
@@ -522,14 +524,14 @@ function PlayingChallenge() {
           flex: 1
         }}>
           <div style={{
-            fontSize: 'clamp(6px, 1.5vw, 8px)',
+            fontSize: 'clamp(8px, 2vw, 10px)',
             color: 'var(--pyxel-light-grey)',
             marginBottom: '4px'
           }}>
             TIME
           </div>
           <div style={{
-            fontSize: 'clamp(8px, 2vw, 10px)',
+            fontSize: 'clamp(14px, 3.5vw, 16px)',
             color: getTimeColor(),
             fontWeight: 'bold',
             textShadow: `0 0 8px ${getTimeColor()}`
