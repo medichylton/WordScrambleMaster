@@ -279,27 +279,31 @@ function PlayingChallenge() {
   
   return (
     <div style={{ 
-      width: '100%',
-      height: '100%', 
+      width: '100vw',
+      height: 'calc(var(--vh, 1vh) * 100)',
       display: 'flex',
       flexDirection: 'column',
       background: 'var(--pyxel-black)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      position: 'fixed',
+      top: 0,
+      left: 0
     }}>
-      {/* Top Header - INCREASED HEIGHT TO PREVENT CUTOFF + Safe Area */}
+      {/* Top Header - Extends behind Dynamic Island */}
       <div style={{
-        height: '70px',
         background: 'var(--gradient-primary)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '8px 12px',
         borderBottom: '3px solid var(--pyxel-dark-grey)',
         zIndex: 2,
         flexShrink: 0,
-        /* Additional safe area padding for Dynamic Island */
-        paddingTop: 'max(8px, env(safe-area-inset-top, 0px))',
-        minHeight: '70px'
+        /* Extend behind Dynamic Island but pad content */
+        paddingTop: `calc(env(safe-area-inset-top, 0px) + 12px)`,
+        paddingBottom: '12px',
+        paddingLeft: '12px',
+        paddingRight: '12px',
+        minHeight: '60px'
       }}>
         <div style={{
           fontSize: 'clamp(7px, 1.8vw, 9px)',
@@ -415,19 +419,21 @@ function PlayingChallenge() {
         />
       </div>
 
-      {/* Bottom Status Panel - Horizontal layout of all the sidebar info */}
+      {/* Bottom Status Panel - Extends behind home indicator using full space */}
       <div style={{
-        minHeight: '80px',
         background: 'var(--gradient-primary)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
-        padding: '12px 16px',
         borderTop: '3px solid var(--pyxel-dark-grey)',
         zIndex: 2,
         flexShrink: 0,
-        /* Additional safe area padding for home indicator */
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))'
+        /* Use the full bottom space including safe area */
+        paddingTop: '16px',
+        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 16px)`,
+        paddingLeft: '16px',
+        paddingRight: '16px',
+        minHeight: `calc(80px + env(safe-area-inset-bottom, 0px))`
       }}>
         {/* Challenge Info */}
         <div style={{

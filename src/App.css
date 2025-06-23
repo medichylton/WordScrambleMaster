@@ -1238,10 +1238,8 @@ body {
   }
   
   body {
-    /* Use safe area insets properly - no padding, handle in components */
     margin: 0;
     padding: 0;
-    /* Ensure proper height calculation */
     height: calc(var(--vh, 1vh) * 100);
     box-sizing: border-box;
   }
@@ -1249,10 +1247,7 @@ body {
   .app {
     height: 100%;
     overflow: hidden;
-    /* Add safe area padding to the main container */
-    padding-top: env(safe-area-inset-top, 0);
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    box-sizing: border-box;
+    /* NO padding here - let individual elements handle safe areas */
   }
   
   .game-screen {
