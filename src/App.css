@@ -854,7 +854,6 @@ body {
     max-height: 200px;
     z-index: 15;
   }
-}
   
   .letter-grid {
     width: min(85vw, 75vh, 400px);
