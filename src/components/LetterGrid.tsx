@@ -9,10 +9,12 @@ interface Position {
 interface LetterGridProps {
   onWordFound: (word: string, score: number) => void;
   onScoreUpdate: (score: number) => void;
+  onCurrentWordChange?: (word: string) => void;
   timeRemaining: number;
+  hideWordDisplay?: boolean;
 }
 
-export function LetterGrid({ onWordFound, onScoreUpdate, timeRemaining }: LetterGridProps) {
+export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, timeRemaining, hideWordDisplay = false }: LetterGridProps) {
   const [grid, setGrid] = useState<string[][]>([]);
   const [selectedPath, setSelectedPath] = useState<Position[]>([]);
   const [currentWord, setCurrentWord] = useState('');
@@ -30,10 +32,12 @@ export function LetterGrid({ onWordFound, onScoreUpdate, timeRemaining }: Letter
     if (selectedPath.length > 0) {
       const word = pathToWord(grid, selectedPath);
       setCurrentWord(word);
+      onCurrentWordChange?.(word);
     } else {
       setCurrentWord('');
+      onCurrentWordChange?.('');
     }
-  }, [selectedPath, grid]);
+  }, [selectedPath, grid, onCurrentWordChange]);
 
   const handleStart = (row: number, col: number) => {
     setIsDragging(true);
@@ -124,28 +128,30 @@ export function LetterGrid({ onWordFound, onScoreUpdate, timeRemaining }: Letter
   };
 
   return (
-    <div className="space-y-4">
-      {/* Current Word Display */}
-      <div className="text-center">
-        <div className="text-lg md:text-2xl font-bold text-white mb-2">
-          {currentWord || 'SELECT LETTERS TO FORM WORDS'}
-        </div>
-        <div className="text-sm text-gray-300">
-          {currentWord.length >= 3 ? (
-            isValidWord(currentWord) ? (
-              foundWords.includes(currentWord) ? (
-                <span className="text-yellow-400">ALREADY FOUND!</span>
+    <div className={hideWordDisplay ? "" : "space-y-4"}>
+      {/* Current Word Display - Hidden in mobile mode */}
+      {!hideWordDisplay && (
+        <div className="text-center">
+          <div className="text-lg md:text-2xl font-bold text-white mb-2">
+            {currentWord || 'SELECT LETTERS TO FORM WORDS'}
+          </div>
+          <div className="text-sm text-gray-300">
+            {currentWord.length >= 3 ? (
+              isValidWord(currentWord) ? (
+                foundWords.includes(currentWord) ? (
+                  <span className="text-yellow-400">ALREADY FOUND!</span>
+                ) : (
+                  <span className="text-green-400">✓ VALID WORD! RELEASE TO SUBMIT</span>
+                )
               ) : (
-                <span className="text-green-400">✓ VALID WORD! RELEASE TO SUBMIT</span>
+                <span className="text-red-400">✗ NOT A VALID WORD</span>
               )
             ) : (
-              <span className="text-red-400">✗ NOT A VALID WORD</span>
-            )
-          ) : (
-            isDragging ? 'KEEP SWIPING...' : 'SWIPE THROUGH LETTERS TO FORM WORDS'
-          )}
+              isDragging ? 'KEEP SWIPING...' : 'SWIPE THROUGH LETTERS TO FORM WORDS'
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Letter Grid */}
       <div 
@@ -190,18 +196,20 @@ export function LetterGrid({ onWordFound, onScoreUpdate, timeRemaining }: Letter
         )}
       </div>
 
-      {/* Controls */}
-      <div className="flex justify-center gap-4">
-        <button 
-          onClick={shuffleGrid}
-          className="btn btn-primary"
-        >
-          NEW GRID
-        </button>
-      </div>
+      {/* Controls - Hidden in mobile mode */}
+      {!hideWordDisplay && (
+        <div className="flex justify-center gap-4">
+          <button 
+            onClick={shuffleGrid}
+            className="btn btn-primary"
+          >
+            NEW GRID
+          </button>
+        </div>
+      )}
 
-      {/* Found Words */}
-      {foundWords.length > 0 && (
+      {/* Found Words - Hidden in mobile mode */}
+      {!hideWordDisplay && foundWords.length > 0 && (
         <div className="card">
           <h4 className="text-lg font-bold mb-2">WORDS FOUND ({foundWords.length})</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

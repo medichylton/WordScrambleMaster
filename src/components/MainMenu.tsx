@@ -11,26 +11,26 @@ export function MainMenu() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full space-y-8">
+    <div className="h-screen overflow-y-auto flex items-center justify-center p-4">
+      <div className="max-w-xl w-full space-y-6">
         {/* Game Title */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-6xl font-bold gradient-text">
+        <div className="text-center space-y-3">
+          <h1 className="text-2xl md:text-4xl font-bold gradient-text">
             WORD SCRAMBLE
           </h1>
-          <h2 className="text-2xl md:text-3xl font-medium text-white">
+          <h2 className="text-lg md:text-2xl font-medium text-white">
             MASTER
           </h2>
-          <p className="text-sm md:text-base text-gray-300">
+          <p className="text-xs text-gray-300">
             A RETRO WORD ADVENTURE
           </p>
         </div>
 
         {/* Game Features */}
-        <div className="card space-y-6">
-          <h3 className="text-lg md:text-2xl font-bold text-center">GAME FEATURES</h3>
+        <div className="card space-y-4">
+          <h3 className="text-sm md:text-lg font-bold text-center">GAME FEATURES</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <FeatureCard
               icon="🎯"
               title="Strategic Challenges"
@@ -55,22 +55,22 @@ export function MainMenu() {
         </div>
 
         {/* Difficulty Selection */}
-        <div className="card space-y-4">
-          <h3 className="text-lg md:text-xl font-bold text-center">CHOOSE DIFFICULTY</h3>
+        <div className="card space-y-3">
+          <h3 className="text-sm md:text-lg font-bold text-center">CHOOSE DIFFICULTY</h3>
           
-          <div className="space-y-2">
+          <div className="space-y-1">
             {(Object.keys(DIFFICULTY_STAKES) as DifficultyStake[]).map(stake => (
-              <label key={stake} className="flex items-center space-x-3 p-3 border border-gray-600 bg-gray-800 cursor-pointer hover:bg-gray-700 transition-colors">
+              <label key={stake} className="flex items-center space-x-2 p-2 border border-gray-600 bg-gray-800 cursor-pointer hover:bg-gray-700 transition-colors">
                 <input
                   type="radio"
                   name="difficulty"
                   value={stake}
                   checked={selectedStake === stake}
                   onChange={(e) => setSelectedStake(e.target.value as DifficultyStake)}
-                  className="w-4 h-4 text-blue-600"
+                  className="w-3 h-3 text-blue-600"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-white text-xs md:text-sm">{DIFFICULTY_STAKES[stake].name.toUpperCase()}</div>
+                  <div className="font-semibold text-white text-xs">{DIFFICULTY_STAKES[stake].name.toUpperCase()}</div>
                   <div className="text-xs text-gray-300">{DIFFICULTY_STAKES[stake].description.toUpperCase()}</div>
                 </div>
                 <div className="text-xs text-gray-400">
@@ -85,7 +85,7 @@ export function MainMenu() {
         <div className="text-center">
           <button
             onClick={handleStartGame}
-            className="btn btn-primary text-lg md:text-xl px-8 py-4"
+            className="btn btn-primary text-sm md:text-lg px-6 py-3"
           >
             ▶️ START GAME
           </button>
@@ -103,11 +103,11 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
-    <div className="flex items-start space-x-3 p-4 bg-gray-800 border border-gray-600">
-      <div className="text-2xl">{icon}</div>
+    <div className="flex items-start space-x-2 p-3 bg-gray-800 border border-gray-600">
+      <div className="text-lg">{icon}</div>
       <div>
-        <h4 className="font-semibold text-sm md:text-lg text-white">{title.toUpperCase()}</h4>
-        <p className="text-gray-300 text-xs md:text-sm">{description.toUpperCase()}</p>
+        <h4 className="font-semibold text-xs text-white">{title.toUpperCase()}</h4>
+        <p className="text-gray-300 text-xs">{description.toUpperCase()}</p>
       </div>
     </div>
   );

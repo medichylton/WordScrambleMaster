@@ -7,46 +7,72 @@ export function GameView() {
   const [currentScore, setCurrentScore] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(120);
   const [wordsFound, setWordsFound] = useState<string[]>([]);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showShop, setShowShop] = useState(false);
 
   return (
-    <div className="game-container">
-      {/* Fixed Header */}
-      <div className="game-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1 className="game-title">WORD SCRAMBLE</h1>
-            <div className="round-info">ROUND {gameState.currentRound}/{gameState.totalRounds}</div>
+    <div className="mobile-game-container">
+      {/* Compact Mobile Header */}
+      <div className="mobile-header">
+        <div className="mobile-header-content">
+          <div className="timer-display">
+            <div className="timer-icon">⏱️</div>
+            <div className="timer-text">{formatTime(timeRemaining)}</div>
           </div>
-          <div className="header-right">
-            <div className="coin-display">🪙 {gameState.coins}</div>
-            <div className="score-display">⭐ {gameState.totalScore}</div>
+          
+          <div className="score-display-mobile">
+            <div className="score-number">{gameState.totalScore}</div>
+            <div className="target-score">/ {gameState.currentChallenge?.targetScore || 500}</div>
           </div>
+          
+          <div className="coins-display-mobile">
+            <div className="coin-icon">🪙</div>
+            <div className="coin-count">{gameState.coins}</div>
+          </div>
+          
+          <button 
+            onClick={() => setShowMenu(true)}
+            className="mobile-menu-btn"
+          >
+            ⚙️
+          </button>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="mobile-progress-bar">
+          <div 
+            className="mobile-progress-fill" 
+            style={{ width: `${Math.min((gameState.totalScore / (gameState.currentChallenge?.targetScore || 500)) * 100, 100)}%` }}
+          />
         </div>
       </div>
 
-      {/* Scrollable Game Content */}
-      <div className="game-content">
-        {gameState.gamePhase === 'selectingChallenge' && <ChallengeSelection />}
-        {gameState.gamePhase === 'playingChallenge' && <PlayingChallenge />}
-        {gameState.gamePhase === 'shopping' && <ShopPhase />}
-        {gameState.gamePhase === 'gameOver' && <GameOver />}
-        {gameState.gamePhase === 'victory' && <Victory />}
+      {/* Main Game Content */}
+      <div className="mobile-game-content">
+        {gameState.gamePhase === 'selectingChallenge' && <MobileChallengeSelection />}
+        {gameState.gamePhase === 'playingChallenge' && <MobilePlayingChallenge />}
+        {gameState.gamePhase === 'shopping' && <MobileShopPhase />}
+        {gameState.gamePhase === 'gameOver' && <MobileGameOver />}
+        {gameState.gamePhase === 'victory' && <MobileVictory />}
       </div>
 
-      {/* Fixed Footer with Menu Button */}
-      <div className="game-footer">
-        <button 
-          onClick={resetGame}
-          className="menu-btn"
-        >
-          ⚙️ MENU
-        </button>
-      </div>
+      {/* Modal Overlays */}
+      {showMenu && (
+        <MobileModal onClose={() => setShowMenu(false)}>
+          <MobileMenuContent onClose={() => setShowMenu(false)} />
+        </MobileModal>
+      )}
+      
+      {showShop && (
+        <MobileModal onClose={() => setShowShop(false)}>
+          <MobileShopContent onClose={() => setShowShop(false)} />
+        </MobileModal>
+      )}
     </div>
   );
 }
 
-function ChallengeSelection() {
+function MobileChallengeSelection() {
   const { selectChallenge } = useGame();
   
   const handleChallengeSelect = (type: 'quick' | 'standard' | 'boss') => {
@@ -69,68 +95,51 @@ function ChallengeSelection() {
   };
   
   return (
-    <div className="challenge-selection">
-      <h2 className="section-title">CHOOSE CHALLENGE</h2>
-      <div className="challenge-grid">
-        <div onClick={() => handleChallengeSelect('quick')}>
-          <ChallengeCard 
-            type="quick"
-            name="Quick Words"
-            description="Find words quickly for bonus coins"
-            reward={10}
-            color=""
-          />
+    <div className="mobile-challenge-selection">
+      <h2 className="mobile-section-title">CHOOSE CHALLENGE</h2>
+      <div className="mobile-challenge-grid">
+        <div onClick={() => handleChallengeSelect('quick')} className="mobile-challenge-card quick">
+          <div className="challenge-card-header">
+            <span className="challenge-icon">⚡</span>
+            <span className="challenge-name">QUICK WORDS</span>
+          </div>
+          <div className="challenge-description">Find words quickly for bonus coins</div>
+          <div className="challenge-reward">🪙 10 COINS</div>
         </div>
-        <div onClick={() => handleChallengeSelect('standard')}>
-          <ChallengeCard 
-            type="standard"
-            name="Word Builder"
-            description="Build your vocabulary strength"
-            reward={20}
-            color=""
-          />
+        
+        <div onClick={() => handleChallengeSelect('standard')} className="mobile-challenge-card standard">
+          <div className="challenge-card-header">
+            <span className="challenge-icon">🎯</span>
+            <span className="challenge-name">WORD BUILDER</span>
+          </div>
+          <div className="challenge-description">Build your vocabulary strength</div>
+          <div className="challenge-reward">🪙 20 COINS</div>
         </div>
-        <div onClick={() => handleChallengeSelect('boss')}>
-          <ChallengeCard 
-            type="boss"
-            name="Boss Challenge"
-            description="Face unique mechanics and high stakes"
-            reward={40}
-            color=""
-          />
+        
+        <div onClick={() => handleChallengeSelect('boss')} className="mobile-challenge-card boss">
+          <div className="challenge-card-header">
+            <span className="challenge-icon">🔥</span>
+            <span className="challenge-name">BOSS CHALLENGE</span>
+          </div>
+          <div className="challenge-description">Face unique mechanics and high stakes</div>
+          <div className="challenge-reward">🪙 40 COINS</div>
         </div>
       </div>
     </div>
   );
 }
 
-function ChallengeCard({ type, name, description, reward, color }: {
-  type: string;
-  name: string;
-  description: string;
-  reward: number;
-  color: string;
-}) {
-  return (
-    <div className={`challenge-card ${type}`}>
-      <h3 className="text-sm md:text-xl font-bold mb-2">{name.toUpperCase()}</h3>
-      <p className="mb-4 text-xs md:text-sm">{description.toUpperCase()}</p>
-      <div className="text-sm md:text-lg font-semibold">🪙 {reward} COINS</div>
-    </div>
-  );
-}
-
-function PlayingChallenge() {
+function MobilePlayingChallenge() {
   const { gameState, dispatch } = useGame();
   const [currentScore, setCurrentScore] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(gameState.currentChallenge?.timeLimit || 120);
   const [wordsFound, setWordsFound] = useState<string[]>([]);
+  const [currentWord, setCurrentWord] = useState('');
   
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
-          // Time's up!
           handleChallengeComplete();
           return 0;
         }
@@ -150,225 +159,125 @@ function PlayingChallenge() {
     // Score is already handled in handleWordFound
   };
   
+  const handleCurrentWordChange = (word: string) => {
+    setCurrentWord(word);
+  };
+  
   const handleChallengeComplete = () => {
     const targetScore = gameState.currentChallenge?.targetScore || 500;
     const coinReward = gameState.currentChallenge?.coinReward || 20;
     
     if (currentScore >= targetScore) {
-      // Challenge completed successfully
       dispatch({ 
         type: 'COMPLETE_CHALLENGE', 
         payload: { 
           score: currentScore, 
-          coins: coinReward + Math.floor(currentScore / 100) // Bonus coins for high scores
+          coins: coinReward + Math.floor(currentScore / 100)
         } 
       });
     } else {
-      // Challenge failed
       dispatch({ type: 'GAME_OVER' });
     }
   };
   
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-  
-  const targetScore = gameState.currentChallenge?.targetScore || 500;
-  const progressPercent = Math.min((currentScore / targetScore) * 100, 100);
-  
   return (
-    <div className="playing-challenge">
-      {/* Progress Bar */}
-      <div className="progress-bar">
-        <div 
-          className="progress-fill" 
-          style={{ width: `${progressPercent}%` }}
-        />
+    <div className="mobile-playing-challenge">
+      {/* Fixed Current Word Display */}
+      <div className="mobile-current-word">
+        <div className="current-word-text">
+          {currentWord || 'SELECT LETTERS TO FORM WORDS'}
+        </div>
+        <div className="words-found-count">{wordsFound.length} WORDS FOUND</div>
       </div>
-      
-      {/* Stats */}
-      <div className="challenge-stats">
-        <div className="stat-card">
-          <div className="stat-value">{currentScore}</div>
-          <div className="stat-label">/ {targetScore}</div>
-          <div className="stat-label">SCORE</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{wordsFound.length}</div>
-          <div className="stat-label">/ {gameState.currentChallenge?.maxWords || 25}</div>
-          <div className="stat-label">WORDS</div>
-        </div>
-        <div className={`stat-card ${timeRemaining < 30 ? 'timer-warning' : ''}`}>
-          <div className="stat-value">{formatTime(timeRemaining)}</div>
-          <div className="stat-label">TIME</div>
-        </div>
-      </div>
-      
-      {/* Letter Grid */}
-      <div className="grid-container">
+
+      {/* Fixed Letter Grid Container */}
+      <div className="mobile-grid-container">
         <LetterGrid 
           onWordFound={handleWordFound}
           onScoreUpdate={handleScoreUpdate}
+          onCurrentWordChange={handleCurrentWordChange}
           timeRemaining={timeRemaining}
+          hideWordDisplay={true}
         />
       </div>
-      
-      {/* Complete Challenge Button */}
-      {currentScore >= targetScore && (
-        <div className="complete-challenge">
-          <button 
-            onClick={handleChallengeComplete}
-            className="btn btn-success"
-          >
-            🎉 COMPLETE
-          </button>
+
+      {/* Fixed Action Buttons */}
+      <div className="mobile-game-actions">
+        <button className="mobile-action-btn shuffle">
+          🔄 NEW GRID
+        </button>
+        <button className="mobile-action-btn hint">
+          💡 HINT
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MobileShopPhase() {
+  return <div>Shop Coming Soon</div>;
+}
+
+function MobileGameOver() {
+  return <div>Game Over</div>;
+}
+
+function MobileVictory() {
+  return <div>Victory!</div>;
+}
+
+function MobileModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="mobile-modal-overlay" onClick={onClose}>
+      <div className="mobile-modal-content" onClick={(e) => e.stopPropagation()}>
+        <button className="mobile-modal-close" onClick={onClose}>✕</button>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function MobileMenuContent({ onClose }: { onClose: () => void }) {
+  const { resetGame } = useGame();
+  
+  return (
+    <div className="mobile-menu-content">
+      <h2>GAME MENU</h2>
+      <div className="mobile-menu-buttons">
+        <button onClick={() => { resetGame(); onClose(); }} className="mobile-menu-btn">
+          🏠 MAIN MENU
+        </button>
+        <button onClick={onClose} className="mobile-menu-btn">
+          ▶️ RESUME
+        </button>
+        <button className="mobile-menu-btn">
+          🔊 SOUND: ON
+        </button>
+        <button className="mobile-menu-btn">
+          ❓ HOW TO PLAY
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MobileShopContent({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="mobile-shop-content">
+      <h2>POWER-UP SHOP</h2>
+      <div className="mobile-shop-items">
+        <div className="mobile-shop-item">
+          <span className="shop-item-icon">⚡</span>
+          <span className="shop-item-name">LETTER BOOST</span>
+          <span className="shop-item-cost">🪙 15</span>
         </div>
-      )}
-    </div>
-  );
-}
-
-function ShopPhase() {
-  const { gameState, dispatch, leaveShop } = useGame();
-  
-  const shopItems = [
-    {
-      id: 'vowel-virtuoso',
-      name: 'Vowel Virtuoso',
-      description: 'Vowels worth 2x points',
-      cost: 8,
-      artwork: '🎵',
-      type: 'letterEnhancer'
-    },
-    {
-      id: 'speed-demon',
-      name: 'Speed Demon', 
-      description: 'Quick words get +50% score',
-      cost: 6,
-      artwork: '⚡',
-      type: 'wordMultiplier'
-    },
-    {
-      id: 'letter-shuffle',
-      name: 'Letter Shuffle',
-      description: 'Shuffle the grid (3 uses)',
-      cost: 4,
-      artwork: '🔄',
-      type: 'consumable'
-    },
-    {
-      id: 'word-wizard',
-      name: 'Word Wizard',
-      description: '7+ letter words score 3x points',
-      cost: 12,
-      artwork: '🧙‍♂️',
-      type: 'letterEnhancer'
-    },
-    {
-      id: 'time-master',
-      name: 'Time Master',
-      description: 'Add 30 seconds to timer',
-      cost: 5,
-      artwork: '⏰',
-      type: 'consumable'
-    }
-  ];
-  
-  const handlePurchase = (item: any) => {
-    if (gameState.coins >= item.cost) {
-      dispatch({
-        type: 'PURCHASE_ITEM',
-        payload: { item }
-      });
-    }
-  };
-  
-  const handleContinue = () => {
-    dispatch({ type: 'NEXT_ROUND' });
-  };
-  
-  return (
-    <div className="text-center space-y-6">
-      <h2 className="text-2xl md:text-3xl font-bold">POWER-UP SHOP</h2>
-      
-      <div className="text-lg">
-        <span className="coin-display">🪙 {gameState.coins} COINS</span>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {shopItems.map(item => (
-          <ShopItemCard 
-            key={item.id}
-            name={item.name}
-            description={item.description}
-            cost={item.cost}
-            artwork={item.artwork}
-            canAfford={gameState.coins >= item.cost}
-            onPurchase={() => handlePurchase(item)}
-          />
-        ))}
-      </div>
-      
-      <button 
-        onClick={handleContinue}
-        className="btn btn-primary text-lg px-8 py-4"
-      >
-        CONTINUE TO ROUND {gameState.currentRound + 1}
-      </button>
     </div>
   );
 }
 
-function ShopItemCard({ name, description, cost, artwork, canAfford, onPurchase }: {
-  name: string;
-  description: string;
-  cost: number;
-  artwork: string;
-  canAfford: boolean;
-  onPurchase: () => void;
-}) {
-  return (
-    <div className="card-hover p-4 border border-gray-600 bg-gray-800">
-      <div className="text-3xl mb-2">{artwork}</div>
-      <h3 className="font-bold text-white text-sm md:text-base">{name.toUpperCase()}</h3>
-      <p className="text-xs md:text-sm text-gray-300 mb-4">{description.toUpperCase()}</p>
-      <button 
-        onClick={onPurchase}
-        disabled={!canAfford}
-        className={`btn text-xs md:text-sm ${canAfford ? 'btn-success' : 'btn-disabled'}`}
-      >
-        🪙 {cost} COINS
-      </button>
-    </div>
-  );
-}
-
-function GameOver() {
-  const { resetGame } = useGame();
-  
-  return (
-    <div className="text-center space-y-6">
-      <h2 className="text-4xl font-bold text-red-600">Game Over</h2>
-      <p className="text-xl">Better luck next time!</p>
-      <button onClick={resetGame} className="btn btn-primary">
-        Play Again
-      </button>
-    </div>
-  );
-}
-
-function Victory() {
-  const { resetGame } = useGame();
-  
-  return (
-    <div className="text-center space-y-6">
-      <h2 className="text-4xl font-bold text-yellow-600">Victory! 🎉</h2>
-      <p className="text-xl">You've mastered all challenges!</p>
-      <button onClick={resetGame} className="btn btn-primary">
-        Play Again
-      </button>
-    </div>
-  );
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 } 
