@@ -283,7 +283,7 @@ function PlayingChallenge() {
       height: 'calc(var(--vh, 1vh) * 100)',
       display: 'flex',
       flexDirection: 'column',
-      background: 'var(--pyxel-black)',
+      background: '#000000',
       overflow: 'hidden',
       position: 'fixed',
       top: 0,
@@ -291,7 +291,7 @@ function PlayingChallenge() {
     }}>
       {/* Top Header - Extends behind Dynamic Island */}
       <div style={{
-        background: 'var(--pyxel-black)',
+        background: '#000000',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -357,7 +357,7 @@ function PlayingChallenge() {
       {/* Current Word Display - FIXED HEIGHT */}
       <div style={{
         height: '50px',
-        background: 'var(--pyxel-black)',
+        background: '#000000',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -423,7 +423,7 @@ function PlayingChallenge() {
 
       {/* Bottom Status Panel - Extends behind home indicator using full space */}
       <div style={{
-        background: 'var(--pyxel-black)',
+        background: '#000000',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
