@@ -1230,12 +1230,26 @@ body {
   }
 }
 
-/* iOS PWA standalone mode - minimal safe approach */
+/* iOS PWA standalone mode - fix height issues */
 @media all and (display-mode: standalone) {
+  html, body {
+    height: calc(var(--vh, 1vh) * 100);
+  }
+  
   body {
-    /* Minimal iOS PWA padding only when needed */
+    /* Use safe area insets properly */
     padding-top: env(safe-area-inset-top, 0);
     padding-bottom: env(safe-area-inset-bottom, 0);
+    /* Ensure proper height calculation */
+    height: calc(var(--vh, 1vh) * 100);
+  }
+  
+  .app {
+    height: calc(var(--vh, 1vh) * 100);
+  }
+  
+  .game-screen {
+    height: calc(var(--vh, 1vh) * 100);
   }
 }
 

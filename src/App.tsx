@@ -24,6 +24,25 @@ function AppContent() {
     
     // Apply retro theme
     document.documentElement.setAttribute('data-theme', 'retro');
+    
+    // iOS PWA viewport fix
+    const setViewportHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    
+    // Set initial height
+    setViewportHeight();
+    
+    // Update on resize/orientation change
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', setViewportHeight);
+      window.removeEventListener('orientationchange', setViewportHeight);
+    };
   }, []);
 
   // Show menu if game hasn't started or is in menu phase
