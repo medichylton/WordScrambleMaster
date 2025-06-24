@@ -1,8 +1,15 @@
 /* Import pixel font first */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-/* Pyxel-inspired 16-color palette with enhanced personality colors */
+/* Authentic Game Boy Color Palette */
 :root {
+  /* Game Boy Original 4-shade green palette */
+  --color-bg: #9bbc0f;      /* Lightest green - background */
+  --color-accent: #8bac0f;  /* Light green - accent */
+  --color-text: #306230;    /* Dark green - text */
+  --color-darkest: #0f380f; /* Darkest green - shadows */
+  
+  /* Legacy colors for compatibility */
   --pyxel-black: #000000;
   --pyxel-dark-blue: #1d2b53;
   --pyxel-dark-purple: #7e2553;
@@ -1452,4 +1459,77 @@ body {
 .glow-legendary {
   box-shadow: 0 0 25px rgba(139, 92, 246, 0.8), inset 0 0 25px rgba(255,255,255,0.2);
   animation: rarityGlow 2s ease-in-out infinite;
+}
+
+/* Game Boy Button Styles */
+.gb-button {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 3px solid var(--color-text);
+  padding: 12px 20px;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-weight: bold;
+  font-size: 16px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gb-button:hover {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.gb-button:active {
+  background: var(--color-darkest);
+  color: var(--color-bg);
+  transform: translateY(1px);
+}
+
+.gb-button:disabled {
+  background: var(--color-accent);
+  color: var(--color-text);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* CRT Screen Effect */
+.crt-screen {
+  position: relative;
+}
+
+.crt-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(15, 56, 15, 0.1) 2px,
+      rgba(15, 56, 15, 0.1) 4px
+    );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Power LED */
+.power-led {
+  width: 8px;
+  height: 8px;
+  background: var(--color-text);
+  animation: power-blink 2s ease-in-out infinite;
+}
+
+@keyframes power-blink {
+  0%, 90% { opacity: 1; }
+  95% { opacity: 0.3; }
+  100% { opacity: 1; }
 } 

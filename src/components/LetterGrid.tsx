@@ -155,58 +155,37 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
     const isGolden = isGoldenLetter(row, col);
     const isVowelWithPower = hasVowelPower && isVowel(letter);
     
-    let background = 'var(--gradient-primary)';
-    let boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-    let color = 'white';
-    let animation = '';
+    // Flat Game Boy styling - no gradients or shadows
+    let background = 'var(--color-bg)';
+    let color = 'var(--color-text)';
+    let border = '3px solid var(--color-text)';
     
     if (isSelected) {
-      background = isGolden ? 
-        'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffc107 100%)' :
-        isVowelWithPower ?
-        'linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #fb7185 100%)' :
-        'var(--gradient-accent)';
-      boxShadow = isGolden ? 
-        '0 0 25px rgba(255, 215, 0, 0.8), 0 0 50px rgba(255, 215, 0, 0.4)' :
-        isVowelWithPower ?
-        '0 0 20px rgba(236, 72, 153, 0.8)' :
-        '0 0 20px var(--glow-blue)';
-      animation = isGolden ? 'goldenPulse 1s ease-in-out infinite' : '';
+      background = 'var(--color-text)';
+      color = 'var(--color-bg)';
+      border = '3px solid var(--color-text)';
     } else if (isInPath) {
-      background = isGolden ? 
-        'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffc107 100%)' :
-        isVowelWithPower ?
-        'linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #fb7185 100%)' :
-        'var(--gradient-secondary)';
-      boxShadow = isGolden ? 
-        '0 0 15px rgba(255, 215, 0, 0.6)' :
-        isVowelWithPower ?
-        '0 0 15px rgba(236, 72, 153, 0.6)' :
-        '0 0 15px var(--glow-green)';
-    } else if (isGolden) {
-      background = 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffc107 100%)';
-      boxShadow = '0 0 10px rgba(255, 215, 0, 0.4)';
-      animation = 'goldenGlow 2s ease-in-out infinite';
-      color = '#8b4513';
-    } else if (isVowelWithPower) {
-      background = 'linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #fb7185 100%)';
-      boxShadow = '0 0 10px rgba(236, 72, 153, 0.4)';
-      animation = 'vowelGlow 2s ease-in-out infinite';
+      background = 'var(--color-accent)';
+      color = 'var(--color-bg)';
+      border = '3px solid var(--color-text)';
+    } else if (isGolden || isVowelWithPower) {
+      // Special letters get accent background
+      background = 'var(--color-accent)';
+      color = 'var(--color-text)';
+      border = '4px solid var(--color-text)'; // Thicker border for special letters
     }
     
     return {
       background,
-      boxShadow,
       color,
-      animation,
-      fontWeight: (isGolden || isVowelWithPower) ? 'bold' : 'normal',
-      textShadow: (isGolden || isVowelWithPower) ? '0 0 10px rgba(255,255,255,0.8)' : '1px 1px 0px rgba(0,0,0,0.5)'
+      border,
+      fontWeight: (isGolden || isVowelWithPower) ? 'bold' : 'normal'
     };
   };
 
   const getCellFromPoint = (clientX: number, clientY: number): Position | null => {
     const element = document.elementFromPoint(clientX, clientY);
-    if (element && element.classList.contains('letter-cell')) {
+    if (element && element.hasAttribute('data-row') && element.hasAttribute('data-col')) {
       const row = parseInt(element.getAttribute('data-row') || '0');
       const col = parseInt(element.getAttribute('data-col') || '0');
       return { row, col };
@@ -410,21 +389,44 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
   };
 
   return (
-    <div className="letter-grid-container">
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '20px'
+    }}>
       {!hideWordDisplay && (
-        <div className={`current-word ${getWordValidationClass()}`}>
-          {currentWord || 'Swipe to form words...'}
+        <div style={{
+          fontSize: '24px',
+          fontWeight: 'bold',
+          fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+          textTransform: 'uppercase',
+          minHeight: '24px',
+          textAlign: 'center',
+          padding: '12px 20px',
+          background: 'var(--color-accent)',
+          color: 'var(--color-bg)',
+          border: '3px solid var(--color-text)'
+        }}>
+          {currentWord || 'SELECT LETTERS'}
           {wordValidationStatus === 'checking' && (
-            <span style={{ marginLeft: '8px', fontSize: '8px' }}>⏳</span>
+            <span style={{ marginLeft: '8px', fontSize: '16px' }}>[?]</span>
           )}
           {selectedPath.length > 0 && !isValidPath(grid, selectedPath) && (
-            <span style={{ marginLeft: '8px', fontSize: '8px', color: 'var(--pyxel-red)' }}>❌</span>
+            <span style={{ marginLeft: '8px', fontSize: '16px' }}>[X]</span>
           )}
         </div>
       )}
       
       <div 
-        className="letter-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '8px',
+          padding: '20px',
+          background: 'var(--color-bg)',
+          border: '4px solid var(--color-text)'
+        }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -440,16 +442,43 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
             return (
               <div
                 key={`${rowIndex}-${colIndex}`}
-                className={`letter-cell ${isSelected ? 'selected' : ''} ${isInPath ? 'path' : ''}`}
                 data-row={rowIndex}
                 data-col={colIndex}
-                style={letterStyle}
+                style={{
+                  ...letterStyle,
+                  width: '70px',
+                  height: '70px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '32px',
+                  fontWeight: 'bold',
+                  fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  textTransform: 'uppercase',
+                  position: 'relative'
+                }}
                 onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
               >
                 {letter}
                 {selectionOrder > 0 && (
-                  <div className="selection-order">
+                  <div style={{
+                    position: 'absolute',
+                    top: '2px',
+                    right: '2px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    color: 'var(--color-bg)',
+                    background: 'var(--color-text)',
+                    borderRadius: '50%',
+                    width: '16px',
+                    height: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
                     {selectionOrder}
                   </div>
                 )}
@@ -459,18 +488,63 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
         )}
       </div>
 
-      <div className="action-buttons">
+      <div style={{
+        display: 'flex',
+        gap: '12px',
+        justifyContent: 'center',
+        marginTop: '20px'
+      }}>
         <button 
           onClick={submitWord} 
-          className="action-button"
+          className="gb-button"
           disabled={currentWord.length < 2 || allFoundWords.includes(currentWord) || wordValidationStatus === 'invalid' || (selectedPath.length > 0 && !isValidPath(grid, selectedPath))}
+          style={{
+            fontSize: '16px',
+            padding: '12px 20px',
+            background: (currentWord.length >= 2 && !allFoundWords.includes(currentWord) && wordValidationStatus !== 'invalid') ? 'var(--color-text)' : 'var(--color-accent)',
+            color: (currentWord.length >= 2 && !allFoundWords.includes(currentWord) && wordValidationStatus !== 'invalid') ? 'var(--color-bg)' : 'var(--color-text)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            opacity: (currentWord.length >= 2 && !allFoundWords.includes(currentWord) && wordValidationStatus !== 'invalid') ? 1 : 0.5
+          }}
         >
           SUBMIT
         </button>
-        <button onClick={clearSelection} className="action-button">
+        <button 
+          onClick={clearSelection} 
+          className="gb-button"
+          style={{
+            fontSize: '16px',
+            padding: '12px 20px',
+            background: 'var(--color-bg)',
+            color: 'var(--color-text)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer'
+          }}
+        >
           CLEAR
         </button>
-        <button onClick={shuffleGrid} className="action-button">
+        <button 
+          onClick={shuffleGrid} 
+          className="gb-button"
+          style={{
+            fontSize: '16px',
+            padding: '12px 20px',
+            background: 'var(--color-bg)',
+            color: 'var(--color-text)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer'
+          }}
+        >
           SHUFFLE
         </button>
       </div>

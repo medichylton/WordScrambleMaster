@@ -1,15 +1,22 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { GameState, GamePhase, DifficultyStake, Challenge, LetterEnhancer, WordMultiplier, ConsumableBoost, ShopItem, GameAction } from '../types/game';
+import { GameState, GamePhase, DifficultyStake, Challenge, LetterEnhancer, WordMultiplier, ConsumableBoost, ShopItem, InventoryItem, GameAction } from '../types/game';
 import { gameReducer } from '../reducers/gameReducer';
 
 const initialGameState: GameState = {
-  currentRound: 1,
-  coins: 10,
+  // Roguelike Run Progression
+  currentRun: 1,
+  currentLevel: 1,
+  maxLevel: 15, // Each run has 15 levels
+  runStartTime: Date.now(),
+  
+  // Persistent Inventory
+  inventory: [],
+  coins: 15,
   totalScore: 0,
+  lifetimeCoins: 0,
+  
+  // Current Challenge State
   currentChallenge: null,
-  letterEnhancers: [],
-  wordMultipliers: [],
-  consumableBoosts: [],
   challengeProgress: {
     currentScore: 0,
     wordsFound: [],
@@ -19,14 +26,22 @@ const initialGameState: GameState = {
     bonusMultiplier: 1.0,
     streakCount: 0
   },
+  
+  // Game State Management
   gamePhase: 'menu',
   isGameWon: false,
   isGameLost: false,
-  totalRounds: 8,
   difficultyStake: 'apprentice',
   gameStarted: false,
-  powerUps: [],
   isGameActive: false,
+  
+  // Legacy Compatibility
+  currentRound: 1,
+  letterEnhancers: [],
+  wordMultipliers: [],
+  consumableBoosts: [],
+  totalRounds: 15,
+  powerUps: [],
   difficulty: 'apprentice'
 };
 
@@ -35,10 +50,13 @@ interface GameContextType {
   dispatch: React.Dispatch<GameAction>;
   // Helper functions
   startGame: (stake: DifficultyStake) => void;
+  startNewRun: (stake: DifficultyStake) => void;
   selectChallenge: (challenge: Challenge) => void;
   submitWord: (word: string, positions: number[], timeTaken: number) => void;
   skipChallenge: (challenge: Challenge) => void;
   purchaseItem: (item: ShopItem) => boolean;
+  purchaseInventoryItem: (item: InventoryItem) => boolean;
+  sellInventoryItem: (itemId: string) => boolean;
   leaveShop: () => void;
   useConsumable: (boost: ConsumableBoost) => void;
   resetGame: () => void;
@@ -55,6 +73,10 @@ export function GameProvider({ children }: GameProviderProps) {
 
   const startGame = (stake: DifficultyStake) => {
     dispatch({ type: 'START_GAME', payload: { stake } });
+  };
+
+  const startNewRun = (stake: DifficultyStake) => {
+    dispatch({ type: 'START_NEW_RUN', payload: { stake } });
   };
 
   const selectChallenge = (challenge: Challenge) => {
@@ -77,6 +99,23 @@ export function GameProvider({ children }: GameProviderProps) {
     return false;
   };
 
+  const purchaseInventoryItem = (item: InventoryItem): boolean => {
+    if (gameState.coins >= item.cost) {
+      dispatch({ type: 'PURCHASE_INVENTORY_ITEM', payload: { item } });
+      return true;
+    }
+    return false;
+  };
+
+  const sellInventoryItem = (itemId: string): boolean => {
+    const item = gameState.inventory.find(inv => inv.id === itemId);
+    if (item) {
+      dispatch({ type: 'SELL_INVENTORY_ITEM', payload: { itemId } });
+      return true;
+    }
+    return false;
+  };
+
   const leaveShop = () => {
     dispatch({ type: 'LEAVE_SHOP' });
   };
@@ -93,10 +132,13 @@ export function GameProvider({ children }: GameProviderProps) {
     gameState,
     dispatch,
     startGame,
+    startNewRun,
     selectChallenge,
     submitWord,
     skipChallenge,
     purchaseItem,
+    purchaseInventoryItem,
+    sellInventoryItem,
     leaveShop,
     useConsumable,
     resetGame

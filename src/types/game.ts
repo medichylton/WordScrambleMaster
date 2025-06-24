@@ -1,21 +1,35 @@
 export interface GameState {
-  currentRound: number;
+  // Roguelike Run Progression
+  currentRun: number;
+  currentLevel: number;
+  maxLevel: number;
+  runStartTime: number;
+  
+  // Persistent Inventory
+  inventory: InventoryItem[];
   coins: number;
   totalScore: number;
+  lifetimeCoins: number;
+  
+  // Current Challenge State
   currentChallenge: Challenge | null;
-  letterEnhancers: LetterEnhancer[];
-  wordMultipliers: WordMultiplier[];
-  consumableBoosts: ConsumableBoost[];
   challengeProgress: ChallengeProgress;
+  
+  // Game State Management
   gamePhase: GamePhase;
   isGameWon: boolean;
   isGameLost: boolean;
-  totalRounds: number;
   difficultyStake: DifficultyStake;
   gameStarted: boolean;
-  // Additional fields for compatibility
-  powerUps: PowerUp[];
   isGameActive: boolean;
+  
+  // Legacy Compatibility
+  currentRound: number;
+  letterEnhancers: LetterEnhancer[];
+  wordMultipliers: WordMultiplier[];
+  consumableBoosts: ConsumableBoost[];
+  totalRounds: number;
+  powerUps: PowerUp[];
   difficulty: DifficultyStake;
 }
 
@@ -25,7 +39,37 @@ export type GamePhase =
   | 'playingChallenge' 
   | 'shopping' 
   | 'gameOver' 
-  | 'victory';
+  | 'victory'
+  | 'runComplete'
+  | 'runSelection';
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  rarity: Rarity;
+  cost: number;
+  sellValue: number;
+  effect: ItemEffect;
+  emoji: string;
+  purchaseLevel: number;
+  timesUsed: number;
+  stackCount: number;
+}
+
+export type ItemEffect = 
+  | { type: 'letterMultiplier'; value: number }
+  | { type: 'vowelBonus'; value: number }
+  | { type: 'chainMultiplier'; value: number }
+  | { type: 'longWordMultiplier'; minLength: number; multiplier: number }
+  | { type: 'goldenLetters'; count: number }
+  | { type: 'wordEcho'; chance: number }
+  | { type: 'exponentialGrowth'; multiplier: number }
+  | { type: 'letterGod'; enabled: boolean }
+  | { type: 'scoreToHealth'; ratio: number }
+  | { type: 'timeExtender'; seconds: number }
+  | { type: 'coinMultiplier'; value: number }
+  | { type: 'extraHands'; value: number };
 
 export type ChallengeType = 'quick' | 'standard' | 'boss';
 
@@ -207,15 +251,21 @@ export const RARITY_COLORS: Record<Rarity, string> = {
 // Game Actions for Reducer
 export type GameAction = 
   | { type: 'START_GAME'; payload?: { stake: DifficultyStake } }
+  | { type: 'START_NEW_RUN'; payload: { stake: DifficultyStake } }
   | { type: 'LOAD_GAME'; payload: GameState }
   | { type: 'SELECT_CHALLENGE'; payload: { challenge: Challenge } | Challenge }
   | { type: 'SUBMIT_WORD'; payload: { word: string; positions: number[]; timeTaken: number } }
   | { type: 'SKIP_CHALLENGE'; payload: { challenge: Challenge } }
   | { type: 'PURCHASE_ITEM'; payload: { item: ShopItem } }
+  | { type: 'PURCHASE_INVENTORY_ITEM'; payload: { item: InventoryItem } }
+  | { type: 'SELL_INVENTORY_ITEM'; payload: { itemId: string } }
   | { type: 'LEAVE_SHOP' }
   | { type: 'USE_CONSUMABLE'; payload: { boost: ConsumableBoost } }
   | { type: 'RESET_GAME' }
   | { type: 'COMPLETE_CHALLENGE'; payload: { score: number; coins: number } }
+  | { type: 'COMPLETE_LEVEL'; payload: { score: number; coins: number } }
+  | { type: 'NEXT_LEVEL' }
+  | { type: 'COMPLETE_RUN'; payload: { totalScore: number; levelsCompleted: number } }
   | { type: 'PURCHASE_POWERUP'; payload: PowerUp }
   | { type: 'SPEND_COINS'; payload: number }
   | { type: 'NEXT_ROUND' }

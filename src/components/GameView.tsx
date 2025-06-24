@@ -10,6 +10,7 @@ export function GameView() {
       {gameState.gamePhase === 'selectingChallenge' && <ChallengeSelection />}
       {gameState.gamePhase === 'playingChallenge' && <PlayingChallenge />}
       {gameState.gamePhase === 'shopping' && <ShopView />}
+      {gameState.gamePhase === 'runComplete' && <RunCompleteView />}
       {gameState.gamePhase === 'gameOver' && <GameOver />}
       {gameState.gamePhase === 'victory' && <Victory />}
     </div>
@@ -17,39 +18,53 @@ export function GameView() {
 }
 
 function ChallengeSelection() {
-  const { selectChallenge } = useGame();
+  const { selectChallenge, gameState } = useGame();
   const [selectedType, setSelectedType] = useState<string>('');
   
-  const challengeTypes = [
+      // Calculate target scores based on current level progression
+    const calculateTargetScore = (baseScore: number) => {
+      const level = gameState.currentLevel;
+      const difficultyMultiplier = {
+        'apprentice': 1,
+        'scholar': 1.3,
+        'expert': 1.6,
+        'master': 2.0,
+        'grandmaster': 2.5
+      }[gameState.difficulty] || 1;
+      
+      return Math.floor(baseScore * Math.pow(1.15, level - 1) * difficultyMultiplier);
+    };
+
+    const challengeTypes = [
     {
       type: 'quick',
       name: 'QUICK BLITZ',
       description: 'Fast-paced word hunting',
       icon: '>>',
-      targetScore: 30,
+      targetScore: calculateTargetScore(30),
       timeLimit: 90,
-      coinReward: 15,
-      color: 'var(--pyxel-yellow)'
+      coinReward: Math.floor(15 + (gameState.currentLevel * 2)),
+      color: 'var(--color-text)'
     },
     {
       type: 'standard',
       name: 'WORD MASTER',
       description: 'Balanced challenge',
       icon: '**',
-      targetScore: 50,
+      targetScore: calculateTargetScore(40),
       timeLimit: 120,
-      coinReward: 25,
-      color: 'var(--pyxel-blue)'
+      coinReward: Math.floor(20 + (gameState.currentLevel * 3)),
+      color: 'var(--color-text)'
     },
     {
       type: 'boss',
       name: 'ULTIMATE TEST',
       description: 'Maximum difficulty',
       icon: '##',
-      targetScore: 75,
+      targetScore: calculateTargetScore(50),
       timeLimit: 180,
-      coinReward: 50,
-      color: 'var(--pyxel-red)'
+      coinReward: Math.floor(30 + (gameState.currentLevel * 5)),
+      color: 'var(--color-text)'
     }
   ];
   
@@ -72,121 +87,125 @@ function ChallengeSelection() {
   
   return (
     <div style={{ 
-      padding: '20px', 
-      textAlign: 'center',
-      height: '100%',
+      width: '100vw',
+      height: 'calc(var(--vh, 1vh) * 100)',
+      background: 'var(--color-bg)',
       display: 'flex',
       flexDirection: 'column',
+      alignItems: 'center',
       justifyContent: 'center',
-      background: 'var(--gradient-primary)',
-      position: 'relative',
-      overflow: 'hidden'
+      padding: '20px',
+      position: 'fixed',
+      top: 0,
+      left: 0
     }}>
-      {/* Animated background elements */}
-      <div style={{
-        position: 'absolute',
-        top: '10%',
-        left: '10%',
-        width: '20px',
-        height: '20px',
-        background: 'var(--pyxel-yellow)',
-        borderRadius: '50%',
-        animation: 'pixelFloat 3s ease-in-out infinite',
-        opacity: 0.6
-      }} />
-      <div style={{
-        position: 'absolute',
-        top: '20%',
-        right: '15%',
-        width: '15px',
-        height: '15px',
-        background: 'var(--pyxel-green)',
-        borderRadius: '50%',
-        animation: 'pixelFloat 4s ease-in-out infinite reverse',
-        opacity: 0.6
-      }} />
-      <div style={{
-        position: 'absolute',
-        bottom: '15%',
-        left: '20%',
-        width: '18px',
-        height: '18px',
-        background: 'var(--pyxel-pink)',
-        borderRadius: '50%',
-        animation: 'pixelFloat 3.5s ease-in-out infinite',
-        opacity: 0.6
-      }} />
       
-      <div className="modal-title" style={{ 
-        marginBottom: '30px',
-        fontSize: 'clamp(14px, 5vw, 20px)',
-        animation: 'titlePulse 2s ease-in-out infinite'
+      <div style={{ 
+        marginBottom: '20px',
+        fontSize: '24px',
+        fontWeight: 'bold',
+        color: 'var(--color-text)',
+        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+        textTransform: 'uppercase',
+        textAlign: 'center'
       }}>
         [&gt;] CHOOSE YOUR CHALLENGE [&lt;]
       </div>
+
+      {/* Run & Level Info */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        width: '100%',
+        maxWidth: '400px',
+        marginBottom: '20px',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: 'var(--color-text)',
+        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+      }}>
+        <div>RUN: {gameState.currentRun}</div>
+        <div>LEVEL: {gameState.currentLevel}/{gameState.maxLevel}</div>
+        <div>[C] {gameState.coins}</div>
+      </div>
+
+      {/* Inventory Count */}
+      <div style={{
+        marginBottom: '30px',
+        fontSize: '14px',
+        color: 'var(--color-text)',
+        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+        textAlign: 'center'
+      }}>
+        INVENTORY: {gameState.inventory.length} ITEMS
+      </div>
       
-      <div className="difficulty-select" style={{ zIndex: 1, position: 'relative' }}>
+      <div style={{ 
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        width: '100%',
+        maxWidth: '400px'
+      }}>
         {challengeTypes.map((challenge, index) => (
-          <div
+          <button
             key={challenge.type}
-            className={`difficulty-button ${selectedType === challenge.type ? 'selected' : ''}`}
+            className="gb-button"
             onClick={() => {
               setSelectedType(challenge.type);
-              setTimeout(() => handleChallengeSelect(challenge), 200);
+              setTimeout(() => handleChallengeSelect(challenge), 100);
             }}
             style={{
-              background: selectedType === challenge.type ? 'var(--glow-green)' : 'var(--gradient-secondary)',
-              borderColor: challenge.color,
-              position: 'relative',
-              overflow: 'hidden',
-              animationDelay: `${index * 0.1}s`
+              background: selectedType === challenge.type ? 'var(--color-text)' : 'var(--color-bg)',
+              color: selectedType === challenge.type ? 'var(--color-bg)' : 'var(--color-text)',
+              border: '4px solid var(--color-text)',
+              padding: '20px',
+              fontSize: '18px',
+              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              textAlign: 'center',
+              width: '100%'
             }}
           >
             {/* Challenge icon */}
             <div style={{
-              fontSize: '20px',
-              marginBottom: '8px',
-              filter: 'drop-shadow(2px 2px 0px rgba(0,0,0,0.5))'
+              fontSize: '24px',
+              marginBottom: '12px',
+              fontWeight: 'bold'
             }}>
               {challenge.icon}
             </div>
             
-            <div style={{ fontSize: 'clamp(10px, 3vw, 12px)', marginBottom: '4px' }}>
+            <div style={{ 
+              fontSize: '20px', 
+              marginBottom: '8px',
+              fontWeight: 'bold'
+            }}>
               {challenge.name}
             </div>
             
             <div style={{ 
-              fontSize: 'clamp(6px, 2vw, 8px)', 
-              opacity: 0.8,
-              marginBottom: '8px'
+              fontSize: '14px', 
+              marginBottom: '12px',
+              fontWeight: 'normal'
             }}>
               {challenge.description}
             </div>
             
             <div style={{ 
-              fontSize: 'clamp(6px, 2vw, 8px)',
+              fontSize: '14px',
               display: 'flex',
               justifyContent: 'space-between',
               width: '100%',
-              opacity: 0.9
+              fontWeight: 'bold'
             }}>
-              <span>[*] {challenge.targetScore}pts</span>
+              <span>[*] {challenge.targetScore}PTS</span>
               <span>[T] {Math.floor(challenge.timeLimit / 60)}:{(challenge.timeLimit % 60).toString().padStart(2, '0')}</span>
               <span>[C] {challenge.coinReward}</span>
             </div>
-            
-            {/* Hover effect overlay */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: '-100%',
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-              transition: 'left 0.5s',
-              pointerEvents: 'none'
-            }} />
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -249,14 +268,16 @@ function PlayingChallenge() {
   const handleChallengeComplete = (finalScore?: number) => {
     const scoreToUse = finalScore || currentScore;
     const targetScore = gameState.currentChallenge?.targetScore || 500;
-    const coinReward = gameState.currentChallenge?.coinReward || 20;
+    const baseCoinReward = gameState.currentChallenge?.coinReward || 20;
     
     if (scoreToUse >= targetScore) {
+      // Level completed! Award coins and advance progression
+      const coinReward = baseCoinReward + Math.floor(scoreToUse / 100);
       dispatch({ 
-        type: 'COMPLETE_CHALLENGE', 
+        type: 'COMPLETE_LEVEL', 
         payload: { 
           score: scoreToUse, 
-          coins: coinReward + Math.floor(scoreToUse / 100)
+          coins: coinReward
         } 
       });
     } else {
@@ -265,9 +286,9 @@ function PlayingChallenge() {
   };
   
   const getTimeColor = () => {
-    if (timeRemaining > 60) return 'var(--pyxel-green)';
-    if (timeRemaining > 30) return 'var(--pyxel-yellow)';
-    return 'var(--pyxel-red)';
+    if (timeRemaining > 60) return 'var(--color-text)';
+    if (timeRemaining > 30) return 'var(--color-accent)';
+    return 'var(--color-text)';
   };
   
   const getProgressPercentage = () => {
@@ -483,9 +504,8 @@ function PlayingChallenge() {
           <div style={{
             width: '100%',
             height: '12px',
-            background: 'var(--pyxel-dark-grey)',
-            border: '2px solid var(--pyxel-light-grey)',
-            borderRadius: '6px',
+            background: 'var(--color-bg)',
+            border: '2px solid var(--color-text)',
             position: 'relative',
             overflow: 'hidden'
           }}>
@@ -496,13 +516,9 @@ function PlayingChallenge() {
               bottom: 0,
               width: `${getProgressPercentage()}%`,
               background: getProgressPercentage() >= 100 
-                ? 'var(--glow-green)' 
-                : 'linear-gradient(to right, var(--pyxel-red), var(--pyxel-orange), var(--pyxel-yellow), var(--pyxel-green))',
-              transition: 'width 0.5s ease',
-              borderRadius: '4px',
-              boxShadow: getProgressPercentage() >= 100 
-                ? '0 0 10px var(--glow-green)' 
-                : '0 0 5px rgba(255,236,39,0.5)'
+                ? 'var(--color-text)' 
+                : 'var(--color-accent)',
+              transition: 'width 0.5s ease'
             }} />
           </div>
         </div>
@@ -561,63 +577,80 @@ function GameOver() {
   const { resetGame, gameState } = useGame();
   
   return (
-    <div className="game-over" style={{
-      background: 'var(--gradient-primary)',
-      position: 'relative',
-      overflow: 'hidden'
+    <div style={{
+      width: '100vw',
+      height: 'calc(var(--vh, 1vh) * 100)',
+      background: 'var(--color-bg)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      padding: '20px',
+      fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
     }}>
-      {/* Sad face animation */}
+      {/* Game Boy style game over */}
       <div style={{
         fontSize: '48px',
         marginBottom: '20px',
-        animation: 'sadFace 2s ease-in-out infinite'
+        color: 'var(--color-text)',
+        fontWeight: 'bold'
       }}>
-        😞
+        [X]
       </div>
       
-      <div className="game-over-title" style={{
-        color: 'var(--pyxel-red)',
-        textShadow: '3px 3px 0px var(--pyxel-dark-purple), 6px 6px 0px rgba(0,0,0,0.8)'
+      <div style={{
+        fontSize: '32px',
+        color: 'var(--color-text)',
+        marginBottom: '20px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase'
       }}>
         GAME OVER
       </div>
       
-      <div className="final-score" style={{
-        marginBottom: '20px'
+      <div style={{
+        fontSize: '18px',
+        color: 'var(--color-text)',
+        marginBottom: '20px',
+        fontWeight: 'bold',
+        textAlign: 'center'
       }}>
-        Better luck next time!
+        BETTER LUCK NEXT TIME!
       </div>
       
       <div style={{
-        fontSize: 'clamp(8px, 2.5vw, 10px)',
-        color: 'var(--pyxel-light-grey)',
+        fontSize: '14px',
+        color: 'var(--color-text)',
         marginBottom: '30px',
-        opacity: 0.8
+        textAlign: 'center'
       }}>
-        You needed {gameState.currentChallenge?.targetScore} points to win
+        YOU NEEDED {gameState.currentChallenge?.targetScore} POINTS TO WIN
       </div>
       
       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
         <button 
           onClick={resetGame}
-          className="menu-button"
+          className="gb-button"
           style={{
-            background: 'var(--gradient-accent)',
-            borderColor: 'var(--pyxel-red)'
+            fontSize: '16px',
+            padding: '12px 20px'
           }}
         >
-          🔄 TRY AGAIN
+          [R] TRY AGAIN
         </button>
         
         <button 
           onClick={() => window.location.reload()}
-          className="menu-button"
+          className="gb-button"
           style={{
-            background: 'var(--gradient-secondary)',
-            borderColor: 'var(--pyxel-blue)'
+            fontSize: '16px',
+            padding: '12px 20px'
           }}
         >
-          🏠 MAIN MENU
+          [H] MAIN MENU
         </button>
       </div>
     </div>
@@ -626,85 +659,80 @@ function GameOver() {
 
 function Victory() {
   const { gameState, resetGame } = useGame();
-  const [showConfetti, setShowConfetti] = useState(true);
-  
-  useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 3000);
-    return () => clearTimeout(timer);
-  }, []);
   
   return (
-    <div className="game-over" style={{
-      background: 'var(--gradient-primary)',
-      position: 'relative',
-      overflow: 'hidden'
+    <div style={{
+      width: '100vw',
+      height: 'calc(var(--vh, 1vh) * 100)',
+      background: 'var(--color-bg)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      padding: '20px',
+      fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
     }}>
-      {/* Confetti effect */}
-      {showConfetti && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                width: '8px',
-                height: '8px',
-                background: ['var(--pyxel-yellow)', 'var(--pyxel-green)', 'var(--pyxel-pink)', 'var(--pyxel-blue)'][i % 4],
-                left: `${Math.random() * 100}%`,
-                animation: `confetti 3s ease-out forwards`,
-                animationDelay: `${Math.random() * 2}s`
-              }}
-            />
-          ))}
-        </div>
-      )}
       
-      {/* Trophy animation */}
+      {/* Game Boy style victory */}
       <div style={{
         fontSize: '64px',
         marginBottom: '20px',
-        animation: 'trophy 2s ease-in-out infinite'
+        color: 'var(--color-text)',
+        fontWeight: 'bold'
       }}>
         [!]
       </div>
       
-      <div className="game-over-title" style={{
-        color: 'var(--glow-green)',
-        textShadow: '3px 3px 0px var(--pyxel-dark-green), 6px 6px 0px rgba(0,0,0,0.8)'
+      <div style={{
+        fontSize: '32px',
+        color: 'var(--color-text)',
+        marginBottom: '20px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase'
       }}>
         VICTORY!
       </div>
       
-      <div className="final-score">
-        [*] Challenge Complete! [*]
+      <div style={{
+        fontSize: '18px',
+        color: 'var(--color-text)',
+        marginBottom: '20px',
+        fontWeight: 'bold',
+        textAlign: 'center'
+      }}>
+        [*] CHALLENGE COMPLETE! [*]
       </div>
       
       <div style={{ 
-        fontSize: 'clamp(10px, 3vw, 12px)', 
+        fontSize: '16px', 
         margin: '20px 0',
-        color: 'var(--pyxel-yellow)',
-        textShadow: '0 0 8px var(--pyxel-yellow)'
+        color: 'var(--color-text)',
+        fontWeight: 'bold'
       }}>
         [C] COINS EARNED: {gameState.currentChallenge?.coinReward || 20}
       </div>
       
       <div style={{
-        fontSize: 'clamp(8px, 2.5vw, 10px)',
-        color: 'var(--pyxel-light-grey)',
+        fontSize: '14px',
+        color: 'var(--color-text)',
         marginBottom: '30px',
-        opacity: 0.8
+        textAlign: 'center'
       }}>
-        Ready for the next challenge?
+        READY FOR THE NEXT CHALLENGE?
       </div>
       
       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
         <button 
           onClick={resetGame}
-          className="menu-button"
+          className="gb-button"
           style={{
-            background: 'var(--glow-green)',
-            color: 'var(--pyxel-black)',
-            borderColor: 'var(--pyxel-yellow)'
+            fontSize: '16px',
+            padding: '12px 20px',
+            background: 'var(--color-text)',
+            color: 'var(--color-bg)'
           }}
         >
           [&gt;] CONTINUE
@@ -712,13 +740,134 @@ function Victory() {
         
         <button 
           onClick={() => window.location.reload()}
-          className="menu-button"
+          className="gb-button"
           style={{
-            background: 'var(--gradient-secondary)',
-            borderColor: 'var(--pyxel-blue)'
+            fontSize: '16px',
+            padding: '12px 20px'
           }}
         >
           [H] MAIN MENU
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RunCompleteView() {
+  const { gameState, dispatch } = useGame();
+  
+  const startNewRun = () => {
+    dispatch({ 
+      type: 'START_NEW_RUN', 
+      payload: { stake: gameState.difficultyStake } 
+    });
+  };
+
+  const backToMenu = () => {
+    dispatch({ type: 'RESET_GAME' });
+  };
+
+  return (
+    <div style={{ 
+      width: '100vw',
+      height: 'calc(var(--vh, 1vh) * 100)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'var(--color-bg)',
+      padding: '20px',
+      position: 'fixed',
+      top: 0,
+      left: 0
+    }}>
+      {/* Run Complete Header */}
+      <div style={{ 
+        marginBottom: '40px',
+        fontSize: '32px',
+        fontWeight: 'bold',
+        color: 'var(--color-text)',
+        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+        textTransform: 'uppercase',
+        textAlign: 'center'
+      }}>
+        [!] RUN COMPLETE [!]
+      </div>
+
+      {/* Run Stats */}
+      <div style={{
+        background: 'var(--color-accent)',
+        border: '3px solid var(--color-text)',
+        padding: '30px',
+        marginBottom: '40px',
+        textAlign: 'center',
+        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+        color: 'var(--color-bg)',
+        minWidth: '300px'
+      }}>
+        <div style={{ fontSize: '18px', marginBottom: '20px', fontWeight: 'bold' }}>
+          RUN #{gameState.currentRun} COMPLETED
+        </div>
+        <div style={{ fontSize: '16px', marginBottom: '10px' }}>
+          LEVELS COMPLETED: {gameState.maxLevel}
+        </div>
+        <div style={{ fontSize: '16px', marginBottom: '10px' }}>
+          FINAL SCORE: {gameState.totalScore}
+        </div>
+        <div style={{ fontSize: '16px', marginBottom: '10px' }}>
+          COINS EARNED: {gameState.coins}
+        </div>
+        <div style={{ fontSize: '16px', marginBottom: '10px' }}>
+          INVENTORY: {gameState.inventory.length} ITEMS
+        </div>
+        <div style={{ fontSize: '16px' }}>
+          DIFFICULTY: {gameState.difficultyStake.toUpperCase()}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div style={{
+        display: 'flex',
+        gap: '20px',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}>
+        <button
+          className="gb-button"
+          onClick={startNewRun}
+          style={{
+            fontSize: '18px',
+            padding: '16px 32px',
+            background: 'var(--color-text)',
+            color: 'var(--color-bg)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            minWidth: '200px'
+          }}
+        >
+          NEW RUN [&gt;]
+        </button>
+
+        <button
+          className="gb-button"
+          onClick={backToMenu}
+          style={{
+            fontSize: '16px',
+            padding: '12px 24px',
+            background: 'var(--color-bg)',
+            color: 'var(--color-text)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            minWidth: '200px'
+          }}
+        >
+          MAIN MENU
         </button>
       </div>
     </div>
@@ -740,7 +889,7 @@ function ShopView() {
     
     for (let i = 0; i < itemCount; i++) {
       const rarity = getRandomRarity(rarityWeights);
-      items.push(generatePowerUpCard(rarity, i));
+      items.push(generateInventoryItem(rarity, i));
     }
     
     return items;
@@ -757,18 +906,15 @@ function ShopView() {
     return 'common';
   }
   
-  function generatePowerUpCard(rarity, index) {
-    const powerUps = {
+  function generateInventoryItem(rarity, index) {
+    const itemTemplates = {
       common: [
         {
-          id: `letter_boost_${index}`,
           name: 'Letter Boost',
           description: '+3 points per letter in words',
           effect: { type: 'letterMultiplier', value: 3 },
           cost: 8,
-          rarity: 'common',
-          emoji: 'AB',
-          synergy: ['word_length']
+          emoji: 'AB'
         },
         {
           id: `quick_hands_${index}`,
@@ -925,14 +1071,30 @@ function ShopView() {
   
   const handlePurchase = (item) => {
     if (gameState.coins >= item.cost) {
+      // Convert shop item to inventory item format
+      const inventoryItem = {
+        ...item,
+        sellValue: Math.floor(item.cost * 0.5), // Sell for half the purchase price
+        purchaseLevel: gameState.currentLevel,
+        timesUsed: 0,
+        stackCount: 1
+      };
+
       dispatch({
-        type: 'PURCHASE_POWERUP',
-        payload: item
+        type: 'PURCHASE_INVENTORY_ITEM',
+        payload: { item: inventoryItem }
       });
       
       // Remove purchased item from shop
       setShopItems(prev => prev.filter(shopItem => shopItem.id !== item.id));
     }
+  };
+
+  const handleSell = (itemId) => {
+    dispatch({
+      type: 'SELL_INVENTORY_ITEM',
+      payload: { itemId }
+    });
   };
   
   const handleReroll = () => {
@@ -948,7 +1110,7 @@ function ShopView() {
   };
   
   const handleContinue = () => {
-    dispatch({ type: 'LEAVE_SHOP' });
+    dispatch({ type: 'NEXT_LEVEL' });
   };
   
   const getRarityColor = (rarity) => {
@@ -985,184 +1147,216 @@ function ShopView() {
       height: 'calc(var(--vh, 1vh) * 100)',
       display: 'flex',
       flexDirection: 'column',
-      background: 'var(--gb-darkest)',
+      background: 'var(--color-bg)',
       overflow: 'hidden',
       position: 'fixed',
       top: 0,
       left: 0
     }}>
       
-      {/* Header Section */}
+      {/* Header Section - Flat Game Boy */}
       <div style={{
         width: '100%',
         height: '80px',
-        background: 'var(--gb-screen-bg)',
-        border: '3px solid var(--gb-darkest)',
-        borderRadius: '8px 8px 0 0',
+        background: 'var(--color-bg)',
+        border: '3px solid var(--color-text)',
+        borderBottom: '3px solid var(--color-text)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         paddingTop: `calc(env(safe-area-inset-top, 0px) + 12px)`,
         paddingLeft: '16px',
         paddingRight: '16px',
-        position: 'relative',
-        boxShadow: 'inset 2px 2px 0px var(--gb-lightest), inset -2px -2px 0px var(--gb-dark)'
+        position: 'relative'
       }}>
-        <h1 className="gb-text" style={{
-          fontSize: 'clamp(16px, 4vw, 24px)',
+        <h1 style={{
+          fontSize: '24px',
           fontWeight: 'bold',
           textAlign: 'center',
           margin: 0,
-          animation: 'gb-title-pulse 2s ease-in-out infinite',
-          textShadow: '2px 2px 0px var(--gb-darkest)'
+          color: 'var(--color-text)',
+          fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+          textTransform: 'uppercase'
         }}>
-          🛍️ POWER-UP SHOP 🛍️
+          [S] POWER-UP SHOP [S]
         </h1>
         
-        {/* Power LED indicator */}
-        <div className="power-led" style={{
+        {/* Power LED indicator - flat */}
+        <div style={{
           position: 'absolute',
           top: '16px',
-          right: '16px'
+          right: '16px',
+          width: '8px',
+          height: '8px',
+          background: 'var(--color-text)'
         }} />
       </div>
 
-      {/* Coins Display */}
+      {/* Coins Display - Flat Game Boy */}
       <div style={{
         width: '100%',
         height: '60px',
-        background: 'var(--gb-dark)',
-        border: '2px solid var(--gb-darkest)',
+        background: 'var(--color-accent)',
+        border: '3px solid var(--color-text)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 20px',
-        boxShadow: 'inset 1px 1px 0px var(--gb-light)'
+        padding: '0 20px'
       }}>
-        <div className="gb-text-light" style={{
-          fontSize: 'clamp(18px, 5vw, 24px)',
+        <div style={{
+          fontSize: '22px',
           fontWeight: 'bold',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '8px',
+          color: 'var(--color-bg)',
+          fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+          textTransform: 'uppercase'
         }}>
-          <span style={{ fontSize: '20px' }}>[C]</span>
+          <span style={{ fontSize: '24px' }}>[C]</span>
           <span>{gameState.coins}</span>
-          <span style={{ fontSize: '14px', opacity: 0.8 }}>COINS</span>
+          <span style={{ fontSize: '18px' }}>COINS</span>
         </div>
       </div>
 
-      {/* Shop Items Grid */}
+      {/* Shop & Inventory Container - Flat Game Boy */}
       <div style={{
         flex: 1,
         padding: '16px',
         overflowY: 'auto',
-        background: 'var(--gb-screen-bg)',
-        border: '2px solid var(--gb-darkest)',
+        background: 'var(--color-bg)',
+        border: '3px solid var(--color-text)'
       }}>
+        {/* Shop Items */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '16px',
-          maxWidth: '800px',
-          margin: '0 auto'
+          marginBottom: '30px'
         }}>
-          {shopItems.map((item, index) => (
+          <h2 style={{
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: 'var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            textAlign: 'center',
+            marginBottom: '20px',
+            textTransform: 'uppercase'
+          }}>
+            [S] SHOP ITEMS [S]
+          </h2>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '16px',
+            maxWidth: '800px',
+            margin: '0 auto'
+          }}>
+            {shopItems.map((item, index) => (
             <div 
               key={index}
-              className={`gb-card gb-card-${item.rarity}`}
+              className="gb-button"
               style={{
                 cursor: gameState.coins >= item.cost ? 'pointer' : 'not-allowed',
-                opacity: gameState.coins >= item.cost ? 1 : 0.6,
-                animation: `cardFloat ${2 + index * 0.2}s ease-in-out infinite`,
-                minHeight: '180px',
+                opacity: gameState.coins >= item.cost ? 1 : 0.5,
+                minHeight: '200px',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                background: gameState.coins >= item.cost ? 'var(--color-bg)' : 'var(--color-accent)',
+                color: 'var(--color-text)',
+                border: item.rarity === 'legendary' ? '4px solid var(--color-text)' : 
+                       item.rarity === 'rare' ? '3px solid var(--color-text)' : '2px solid var(--color-text)',
+                padding: '16px',
+                fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                textAlign: 'center'
               }}
               onClick={() => gameState.coins >= item.cost && handlePurchase(item)}
             >
-              {/* Card Header */}
+              {/* Card Header - Flat */}
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '8px'
+                marginBottom: '12px'
               }}>
-                <div className="gb-text" style={{
+                <div style={{
                   fontSize: '14px',
                   fontWeight: 'bold',
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
+                  color: 'var(--color-text)'
                 }}>
                   {item.rarity}
                 </div>
-                <div className="gb-text" style={{
+                <div style={{
                   fontSize: '16px',
                   fontWeight: 'bold',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px'
+                  gap: '4px',
+                  color: 'var(--color-text)'
                 }}>
                   <span>[C]</span>
                   <span>{item.cost}</span>
                 </div>
               </div>
 
-              {/* Card Icon */}
+              {/* Card Icon - Flat */}
               <div style={{
-                fontSize: '32px',
+                fontSize: '36px',
                 textAlign: 'center',
-                marginBottom: '8px',
-                animation: 'gb-symbol-pulse 2s ease-in-out infinite'
+                marginBottom: '12px',
+                fontWeight: 'bold',
+                color: 'var(--color-text)'
               }}>
                 {item.emoji}
               </div>
 
-              {/* Card Title */}
-              <div className="gb-text" style={{
-                fontSize: '16px',
+              {/* Card Title - Flat */}
+              <div style={{
+                fontSize: '18px',
                 fontWeight: 'bold',
                 textAlign: 'center',
-                marginBottom: '8px',
-                textTransform: 'uppercase'
+                marginBottom: '12px',
+                textTransform: 'uppercase',
+                color: 'var(--color-text)'
               }}>
                 {item.name}
               </div>
 
-              {/* Card Description */}
-              <div className="gb-text" style={{
-                fontSize: '12px',
+              {/* Card Description - Flat */}
+              <div style={{
+                fontSize: '14px',
                 textAlign: 'center',
                 flex: 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '0 8px',
-                lineHeight: '1.3'
+                lineHeight: '1.4',
+                color: 'var(--color-text)'
               }}>
                 {item.description}
               </div>
 
-              {/* Synergy Tags */}
+              {/* Synergy Tags - Flat */}
               {item.synergies && item.synergies.length > 0 && (
                 <div style={{
                   display: 'flex',
                   flexWrap: 'wrap',
                   gap: '4px',
-                  marginTop: '8px',
+                  marginTop: '12px',
                   justifyContent: 'center'
                 }}>
                   {item.synergies.map((synergy, i) => (
                     <span 
                       key={i}
-                      className="gb-text"
                       style={{
-                        fontSize: '10px',
-                        background: 'var(--gb-dark)',
-                        color: 'var(--gb-lightest)',
-                        padding: '2px 6px',
-                        borderRadius: '2px',
-                        border: '1px solid var(--gb-darkest)',
-                        textTransform: 'uppercase'
+                        fontSize: '12px',
+                        background: 'var(--color-accent)',
+                        color: 'var(--color-bg)',
+                        padding: '4px 8px',
+                        border: '1px solid var(--color-text)',
+                        textTransform: 'uppercase',
+                        fontWeight: 'bold',
+                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
                       }}
                     >
                       {synergy}
@@ -1172,30 +1366,152 @@ function ShopView() {
               )}
             </div>
           ))}
+          </div>
         </div>
+
+        {/* Inventory Section */}
+        {gameState.inventory.length > 0 && (
+          <div style={{
+            marginBottom: '20px'
+          }}>
+            <h2 style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: 'var(--color-text)',
+              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+              textAlign: 'center',
+              marginBottom: '20px',
+              textTransform: 'uppercase'
+            }}>
+              [I] YOUR INVENTORY [I]
+            </h2>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '16px',
+              maxWidth: '800px',
+              margin: '0 auto'
+            }}>
+              {gameState.inventory.map((item, index) => (
+                <div 
+                  key={index}
+                  className="gb-button"
+                  style={{
+                    minHeight: '200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: 'var(--color-accent)',
+                    color: 'var(--color-text)',
+                    border: '3px solid var(--color-text)',
+                    padding: '16px',
+                    fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                    textAlign: 'center',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => handleSell(item.id)}
+                >
+                  {/* Owned Item Header */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      textTransform: 'uppercase'
+                    }}>
+                      OWNED x{item.stackCount}
+                    </div>
+                    <div style={{
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      <span>SELL: [C]</span>
+                      <span>{item.sellValue}</span>
+                    </div>
+                  </div>
+
+                  {/* Item Details */}
+                  <div style={{
+                    fontSize: '24px',
+                    textAlign: 'center',
+                    marginBottom: '8px',
+                    fontWeight: 'bold'
+                  }}>
+                    {item.emoji}
+                  </div>
+
+                  <div style={{
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    marginBottom: '8px',
+                    textTransform: 'uppercase'
+                  }}>
+                    {item.name}
+                  </div>
+
+                  <div style={{
+                    fontSize: '12px',
+                    textAlign: 'center',
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 8px',
+                    lineHeight: '1.4'
+                  }}>
+                    {item.description}
+                  </div>
+
+                  <div style={{
+                    fontSize: '12px',
+                    marginTop: '8px',
+                    opacity: 0.8
+                  }}>
+                    BOUGHT: LVL {item.purchaseLevel}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Bottom Controls */}
+      {/* Bottom Controls - Flat Game Boy */}
       <div style={{
         width: '100%',
         height: '80px',
-        background: 'var(--gb-dark)',
-        border: '3px solid var(--gb-darkest)',
-        borderRadius: '0 0 8px 8px',
+        background: 'var(--color-bg)',
+        border: '3px solid var(--color-text)',
+        borderTop: '3px solid var(--color-text)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 20px',
-        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 12px)`,
-        boxShadow: 'inset 2px 2px 0px var(--gb-light)'
+        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 12px)`
       }}>
         <button 
           className="gb-button"
           onClick={handleReroll}
           disabled={gameState.coins < rerollCost}
           style={{
-            fontSize: '14px',
-            padding: '10px 16px'
+            fontSize: '16px',
+            padding: '12px 20px',
+            background: gameState.coins >= rerollCost ? 'var(--color-bg)' : 'var(--color-accent)',
+            color: 'var(--color-text)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: gameState.coins >= rerollCost ? 'pointer' : 'not-allowed',
+            opacity: gameState.coins >= rerollCost ? 1 : 0.5
           }}
         >
           [R] REROLL ({rerollCost}[C])
@@ -1205,12 +1521,18 @@ function ShopView() {
           className="gb-button"
           onClick={handleContinue}
           style={{
-            fontSize: '14px',
-            padding: '10px 20px',
-            background: 'var(--gradient-accent)'
+            fontSize: '16px',
+            padding: '12px 24px',
+            background: 'var(--color-text)',
+            color: 'var(--color-bg)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer'
           }}
         >
-          CONTINUE [&gt;]
+          {gameState.currentLevel >= gameState.maxLevel ? 'COMPLETE RUN [!]' : `LEVEL ${gameState.currentLevel + 1} [>]`}
         </button>
       </div>
     </div>
