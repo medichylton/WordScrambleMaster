@@ -833,23 +833,25 @@ function PlayingChallenge() {
         </div>
       </div>
 
-      {/* Word Found Message Display */}
+      {/* Word Found Message Display - FIXED: Move to top and make non-blocking */}
       {wordFoundMessage && (
         <div style={{
           position: 'fixed',
-          top: '40%',
+          top: `calc(env(safe-area-inset-top, 0px) + 80px)`, // Position below header
           left: '50%',
-          transform: 'translate(-50%, -50%)',
+          transform: 'translateX(-50%)',
           zIndex: 1000,
           background: '#0F380F',
           color: '#9BBB0F',
-          border: '3px solid #0F380F',
-          padding: '16px',
-          fontSize: '18px',
+          border: '2px solid #0F380F',
+          padding: '8px 16px',
+          fontSize: '14px',
           fontWeight: 'bold',
           textAlign: 'center',
           maxWidth: '80%',
-          animation: 'fadeInOut 3s ease-in-out'
+          borderRadius: '0',
+          animation: 'fadeInOut 3s ease-in-out',
+          pointerEvents: 'none' // Don't block touch events
         }}>
           {wordFoundMessage}
         </div>
@@ -1167,7 +1169,7 @@ function ShopView() {
   const [rerollCost, setRerollCost] = useState(5);
 
   const generateShopItems = () => {
-    const items = [];
+    const items: InventoryItem[] = [];
     const level = gameState.currentLevel;
     
     // Generate 6 shop items with varying rarities
@@ -1176,20 +1178,46 @@ function ShopView() {
       const cost = calculateCost(rarity, level);
       const sellValue = Math.floor(cost * 0.6);
       
-             const baseItem = generateRandomPowerCard(level);
-       const item: InventoryItem = {
-         id: `shop-${Date.now()}-${i}`,
-         name: baseItem.name,
-         description: baseItem.description,
-         rarity: rarity,
-         cost: cost,
-         sellValue: sellValue,
-         effect: { type: 'letterMultiplier', value: 1.5 }, // Convert to ItemEffect
-         emoji: getPerkEmoji(baseItem.name),
-         purchaseLevel: level,
-         timesUsed: 0,
-         stackCount: 1
-       };
+      // Create a simple power card item
+      const powerCardNames = [
+        'Score Booster', 'Vowel Hunter', 'Long Word Master', 'Speed Bonus',
+        'Coin Collector', 'Time Extender', 'Letter Multiplier', 'Word Echo',
+        'Pattern Finder', 'Chain Builder', 'Streak Master', 'Perfect Score'
+      ];
+      
+      const powerCardDescriptions = [
+        'Increases all word scores by 50%',
+        'Vowel-heavy words score double',
+        'Long words (6+ letters) score triple',
+        'Fast word finding gives bonus points',
+        'Earn extra coins for each word found',
+        'Adds 30 seconds to time limit',
+        'Each letter adds bonus points',
+        'Small chance to duplicate word scores',
+        'Palindromes and patterns score more',
+        'Consecutive words build multipliers',
+        'Word streaks give exponential bonuses',
+        'Perfect level completion gives huge bonus'
+      ];
+      
+      const randomIndex = Math.floor(Math.random() * powerCardNames.length);
+      
+      const item: InventoryItem = {
+        id: `shop-${Date.now()}-${i}`,
+        name: powerCardNames[randomIndex],
+        description: powerCardDescriptions[randomIndex],
+        rarity: rarity,
+        cost: cost,
+        sellValue: sellValue,
+        effect: {
+          type: 'letterMultiplier',
+          value: 1.5 + (Math.random() * 0.5) // 1.5x to 2x multiplier
+        },
+        emoji: '🎯',
+        purchaseLevel: level,
+        timesUsed: 0,
+        stackCount: 1
+      };
       
       items.push(item);
     }

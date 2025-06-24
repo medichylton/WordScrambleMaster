@@ -1,4 +1,4 @@
-import { PerkEffect, PerkEffectType } from '../types/game';
+import { PerkEffect, PerkEffectType, InventoryItem, ItemEffect } from '../types/game';
 
 // Power Card Effect System
 export interface PowerCardContext {
@@ -9,7 +9,7 @@ export interface PowerCardContext {
   timeRemaining: number;
   grid: string[][];
   coins: number;
-  activePerks: PerkEffect[];
+  activePerks: InventoryItem[];
   level: number;
 }
 
@@ -35,9 +35,9 @@ export const applyPowerCardEffects = (
   const gridModifications: string[][] = [];
   const messages: string[] = [];
 
-  // Apply each active power card
-  context.activePerks.forEach(perk => {
-    const effect = applySinglePowerCardEffect(perk.effect, word, baseScore, context);
+  // Apply each active power card from inventory
+  context.activePerks.forEach(item => {
+    const effect = applyInventoryItemEffect(item.effect, word, baseScore, context);
     
     scoreModifier *= effect.scoreModifier;
     coinBonus += effect.coinBonus;
@@ -57,160 +57,9 @@ export const applyPowerCardEffects = (
   };
 };
 
-// Apply a single power card effect
-const applySinglePowerCardEffect = (
-  effect: PerkEffectType,
-  word: string,
-  baseScore: number,
-  context: PowerCardContext
-): PowerCardResult => {
-  const result: PowerCardResult = {
-    scoreModifier: 1,
-    coinBonus: 0,
-    timeBonus: 0,
-    wordModifications: [],
-    gridModifications: [],
-    messages: []
-  };
-
-  // Handle different effect types based on the actual structure from inventory items
-  const effectType = typeof effect === 'string' ? effect : effect.type;
-  
-  switch (effectType) {
-    // Basic multipliers
-    case 'scoreMultiplier':
-      const multiplier = typeof effect === 'object' && effect.value ? effect.value : 1.5;
-      result.scoreModifier *= multiplier;
-      result.messages.push(`🎯 Score multiplier: ${multiplier}x`);
-      break;
-
-    case 'wordLengthBonus':
-      const lengthBonus = 1 + (word.length * 0.1); // 10% per letter
-      result.scoreModifier *= lengthBonus;
-      result.messages.push(`📏 Length bonus: +${Math.round((lengthBonus - 1) * 100)}%`);
-      break;
-
-    case 'vowelBonus':
-      const vowelCount = word.split('').filter(c => ['A', 'E', 'I', 'O', 'U'].includes(c.toUpperCase())).length;
-      if (vowelCount > 0) {
-        const vowelMultiplier = 1 + (vowelCount * 0.2); // 20% per vowel
-        result.scoreModifier *= vowelMultiplier;
-        result.messages.push(`✨ Vowel bonus: ${vowelCount} vowels (+${Math.round((vowelMultiplier - 1) * 100)}%)`);
-      }
-      break;
-
-    case 'consonantBonus':
-      const consonantCount = word.split('').filter(c => !['A', 'E', 'I', 'O', 'U'].includes(c.toUpperCase())).length;
-      if (consonantCount > 0) {
-        const consonantMultiplier = 1 + (consonantCount * 0.15); // 15% per consonant
-        result.scoreModifier *= consonantMultiplier;
-        result.messages.push(`💪 Consonant bonus: ${consonantCount} consonants (+${Math.round((consonantMultiplier - 1) * 100)}%)`);
-      }
-      break;
-
-    case 'coinBonus':
-      const coinAmount = typeof effect === 'object' && effect.value ? effect.value : Math.floor(word.length / 2);
-      result.coinBonus += coinAmount;
-      result.messages.push(`💰 Coin bonus: +${coinAmount} coins`);
-      break;
-
-    case 'timeBonus':
-      const timeAmount = typeof effect === 'object' && effect.seconds ? effect.seconds : 5;
-      result.timeBonus += timeAmount;
-      result.messages.push(`⏰ Time bonus: +${timeAmount}s`);
-      break;
-
-    // Pattern bonuses
-    case 'palindromeBonus':
-      if (isPalindrome(word)) {
-        result.scoreModifier *= 3;
-        result.messages.push(`🔄 Palindrome bonus: 3x for "${word}"`);
-      }
-      break;
-
-    case 'longWordBonus':
-      if (word.length >= 6) {
-        result.scoreModifier *= 2;
-        result.messages.push(`📚 Long word bonus: 2x for ${word.length}-letter word`);
-      }
-      break;
-
-    case 'shortWordBonus':
-      if (word.length <= 4) {
-        result.scoreModifier *= 1.5;
-        result.messages.push(`🎯 Short word bonus: 1.5x for ${word.length}-letter word`);
-      }
-      break;
-
-    // Advanced effects
-    case 'alliterationBonus':
-      if (isAlliteration(word)) {
-        result.scoreModifier *= 2.5;
-        result.messages.push(`🎪 Alliteration bonus: 2.5x for "${word}"`);
-      }
-      break;
-
-    case 'rhymeBonus':
-      if (hasRhyme(word, context.wordsFound)) {
-        result.scoreModifier *= 2;
-        result.messages.push(`🎵 Rhyme bonus: 2x - rhyming words!`);
-      }
-      break;
-
-    case 'anagramBonus':
-      if (hasAnagram(word, context.wordsFound)) {
-        result.scoreModifier *= 2;
-        result.messages.push(`🎭 Anagram bonus: 2x - found anagram!`);
-      }
-      break;
-
-    // Economy effects
-    case 'doubleCoins':
-      result.coinBonus += Math.floor(baseScore / 10);
-      result.messages.push(`💎 Double coins: +${Math.floor(baseScore / 10)} coins`);
-      break;
-
-    case 'scoreToCoins':
-      const coinConversion = Math.floor(baseScore / 20);
-      result.coinBonus += coinConversion;
-      result.messages.push(`🏦 Score to coins: +${coinConversion} coins`);
-      break;
-
-    // Legacy effect types - handle old format
-    case 'letterTransform':
-    case 'vowelTheft':
-    case 'consonantMultiplier':
-    case 'goldenVowels':
-    case 'lengthBonus':
-    case 'shortWordMultiplier':
-    case 'longWordMultiplier':
-    case 'perfectLength':
-    case 'speedBonus':
-    case 'timeToCoins':
-    case 'timeFreeze':
-    case 'palindromeMultiplier':
-    case 'anagramMultiplier':
-    case 'rhymeMultiplier':
-    case 'alliterationMultiplier':
-    case 'diagonalBonus':
-      // Handle legacy effects with their original logic
-      return applySinglePowerCardEffectLegacy(effect, word, baseScore, context);
-
-    default:
-      // Try to handle as a generic multiplier effect
-      if (typeof effect === 'object' && effect.value) {
-        result.scoreModifier *= effect.value;
-        result.messages.push(`⚡ Power effect: ${effect.value}x`);
-      }
-      break;
-  }
-
-  return result;
-};
-
-// Legacy effect handler for backwards compatibility
-const applySinglePowerCardEffectLegacy = (
-  effect: PerkEffectType,
+// Apply inventory item effects
+const applyInventoryItemEffect = (
+  effect: ItemEffect,
   word: string,
   baseScore: number,
   context: PowerCardContext
@@ -225,58 +74,99 @@ const applySinglePowerCardEffectLegacy = (
   };
 
   switch (effect.type) {
-    case 'consonantMultiplier':
-      const consonantCount = word.split('').filter(c => !['A', 'E', 'I', 'O', 'U'].includes(c)).length;
-      if (consonantCount > 0) {
-        result.scoreModifier *= effect.value;
-        result.messages.push(`💪 Consonants worth ${effect.value}x (${consonantCount} consonants)`);
+    case 'letterMultiplier':
+      result.scoreModifier = effect.value;
+      result.messages.push(`🎯 Letter multiplier: ${effect.value}x`);
+      break;
+
+    case 'vowelBonus':
+      const vowelCount = word.split('').filter(c => ['A', 'E', 'I', 'O', 'U'].includes(c.toUpperCase())).length;
+      if (vowelCount > 0) {
+        const vowelMultiplier = 1 + (vowelCount * (effect.value - 1)); 
+        result.scoreModifier = vowelMultiplier;
+        result.messages.push(`✨ Vowel bonus: ${vowelCount} vowels (+${Math.round((vowelMultiplier - 1) * 100)}%)`);
       }
       break;
 
-    case 'lengthBonus':
-      const lengthBonus = 1 + (word.length * effect.value / 100);
-      result.scoreModifier *= lengthBonus;
-      result.messages.push(`📏 Length bonus: +${effect.value}% per letter (${Math.round((lengthBonus - 1) * 100)}% total)`);
-      break;
-
-    case 'palindromeMultiplier':
-      if (isPalindrome(word)) {
-        result.scoreModifier *= effect.value;
-        result.messages.push(`👑 Palindrome bonus: ${effect.value}x for "${word}"`);
+    case 'chainMultiplier':
+      // Apply chain multiplier based on words found
+      const chainLength = Math.min(context.wordsFound.length, 5); // Cap at 5
+      if (chainLength > 0) {
+        const chainBonus = 1 + (chainLength * (effect.value - 1));
+        result.scoreModifier = chainBonus;
+        result.messages.push(`⛓️ Chain bonus: ${chainLength} words (+${Math.round((chainBonus - 1) * 100)}%)`);
       }
       break;
 
-    // Add other legacy effects as needed...
+    case 'longWordMultiplier':
+      if (word.length >= effect.minLength) {
+        result.scoreModifier = effect.multiplier;
+        result.messages.push(`📚 Long word bonus: ${effect.multiplier}x for ${word.length}-letter word`);
+      }
+      break;
+
+    case 'goldenLetters':
+      // Golden letters effect - random bonus
+      const goldenChance = Math.random();
+      if (goldenChance < 0.3) { // 30% chance
+        result.scoreModifier = 2;
+        result.messages.push(`✨ Golden letter activated: 2x bonus!`);
+      }
+      break;
+
+    case 'wordEcho':
+      // Word echo effect - chance for bonus coins
+      if (Math.random() < effect.chance) {
+        result.coinBonus = Math.floor(baseScore / 10);
+        result.messages.push(`🔄 Word echo: +${Math.floor(baseScore / 10)} coins`);
+      }
+      break;
+
+    case 'exponentialGrowth':
+      // Exponential growth based on words found
+      const growthFactor = Math.pow(effect.multiplier, Math.min(context.wordsFound.length, 3));
+      result.scoreModifier = growthFactor;
+      result.messages.push(`📈 Exponential growth: ${growthFactor.toFixed(1)}x`);
+      break;
+
+    case 'letterGod':
+      // Letter god - massive bonus
+      if (effect.enabled) {
+        result.scoreModifier = 3;
+        result.messages.push(`👑 Letter God: 3x all scores!`);
+      }
+      break;
+
+    case 'timeExtender':
+      result.timeBonus = effect.seconds;
+      result.messages.push(`⏰ Time bonus: +${effect.seconds}s`);
+      break;
+
+    case 'coinMultiplier':
+      result.coinBonus = Math.floor(baseScore * effect.value / 10);
+      result.messages.push(`💰 Coin multiplier: +${Math.floor(baseScore * effect.value / 10)} coins`);
+      break;
+
+    case 'extraHands':
+      // Extra hands - bonus for longer words
+      if (word.length >= 5) {
+        result.scoreModifier = 1 + (effect.value * 0.5);
+        result.messages.push(`🤲 Extra hands: +${Math.round(effect.value * 50)}% for long words`);
+      }
+      break;
+
+    case 'scoreToHealth':
+      // Score to health - convert score to coins
+      result.coinBonus = Math.floor(baseScore * effect.ratio);
+      result.messages.push(`❤️ Score to health: +${Math.floor(baseScore * effect.ratio)} coins`);
+      break;
+
+    default:
+      // No effect for unknown types
+      break;
   }
 
   return result;
-};
-
-// Helper functions for pattern detection
-const isPalindrome = (word: string): boolean {
-  const clean = word.toUpperCase().replace(/[^A-Z]/g, '');
-  return clean === clean.split('').reverse().join('');
-};
-
-const hasAnagram = (word: string, wordsFound: string[]): boolean {
-  const sorted = word.split('').sort().join('');
-  return wordsFound.some(found => 
-    found !== word && found.split('').sort().join('') === sorted
-  );
-};
-
-const hasRhyme = (word: string, wordsFound: string[]): boolean {
-  const ending = word.slice(-2).toLowerCase();
-  return wordsFound.some(found => 
-    found !== word && found.slice(-2).toLowerCase() === ending
-  );
-};
-
-const isAlliteration = (word: string): boolean {
-  const words = word.split(' ');
-  if (words.length < 2) return false;
-  const firstLetter = words[0].charAt(0).toLowerCase();
-  return words.every(w => w.charAt(0).toLowerCase() === firstLetter);
 };
 
 // Calculate total power card multiplier

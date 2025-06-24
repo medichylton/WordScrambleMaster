@@ -321,20 +321,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Calculate base score (simple scoring for now)
       let baseScore = word.length * 10;
       
-      // Apply power card effects if we have active perks
-      const activePerks = state.inventory.map(item => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        rarity: item.rarity,
-        effect: item.effect
-      }));
-      
+      // Apply power card effects if we have inventory items
       let finalScore = baseScore;
       let coinBonus = 0;
       let effectMessages: string[] = [];
       
-      if (activePerks.length > 0) {
+      if (state.inventory.length > 0) {
         // Import power card effects
         const { applyPowerCardEffects } = require('../utils/powerCardEffects');
         
@@ -346,7 +338,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           timeRemaining: state.challengeProgress?.timeRemaining || 0,
           grid: [], // Would be passed from component
           coins: state.coins,
-          activePerks: activePerks,
+          activePerks: state.inventory, // Pass inventory items directly
           level: state.currentLevel
         };
         

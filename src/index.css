@@ -184,10 +184,18 @@ body {
 
 /* Animations */
 @keyframes fadeInOut {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-  20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  0% { 
+    opacity: 0; 
+    transform: translateX(-50%) translateY(-10px);
+  }
+  10%, 90% { 
+    opacity: 1; 
+    transform: translateX(-50%) translateY(0);
+  }
+  100% { 
+    opacity: 0; 
+    transform: translateX(-50%) translateY(-10px);
+  }
 }
 
 /* Responsive Design */
