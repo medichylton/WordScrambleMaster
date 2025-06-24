@@ -217,6 +217,7 @@ export type GameAction =
   | { type: 'RESET_GAME' }
   | { type: 'COMPLETE_CHALLENGE'; payload: { score: number; coins: number } }
   | { type: 'PURCHASE_POWERUP'; payload: PowerUp }
+  | { type: 'SPEND_COINS'; payload: number }
   | { type: 'NEXT_ROUND' }
   | { type: 'GAME_OVER' }
   | { type: 'SET_DIFFICULTY'; payload: DifficultyStake };

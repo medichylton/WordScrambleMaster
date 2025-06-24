@@ -3,38 +3,245 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Authentic Game Boy 4-shade palette - ONLY these colors allowed */
+  --gb-darkest: #0f380f;    /* Darkest green - text and borders */
+  --gb-dark: #306230;       /* Dark green - secondary elements */
+  --gb-light: #8bac0f;      /* Light green - backgrounds */
+  --gb-lightest: #9bbc0f;   /* Lightest green - highlights */
+  
+  /* Simplified 2-3 color system as requested */
+  --color-bg: #8bac0f;      /* Main background */
+  --color-text: #0f380f;    /* All text */
+  --color-accent: #306230;  /* Borders and accents */
+  
+  /* Remove all complex gradients and effects */
+  --vh: 1vh;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  line-height: 1.1;
+  font-weight: bold;
+  color: var(--color-text);
+  background-color: var(--color-bg);
   font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  padding: 0;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow: hidden;
+  font-size: 16px; /* Much larger base font */
+  font-weight: bold;
 }
 
 #root {
   width: 100%;
-  margin: 0 auto;
-  text-align: center;
+  margin: 0;
+  background: var(--color-bg);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* Remove ALL effects - completely flat design */
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: none;
+  font-smoothing: none;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  /* Remove all shadows, transitions, and effects */
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Flat Game Boy button - no effects */
+.gb-button {
+  background: var(--color-bg);
+  border: 2px solid var(--color-text);
+  color: var(--color-text);
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-weight: bold;
+  font-size: 18px; /* Much larger */
+  padding: 12px 20px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  /* Completely flat - no shadows or effects */
+}
+
+.gb-button:hover {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.gb-button:active {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.gb-button:disabled {
+  background: var(--color-accent);
+  color: var(--color-text);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Flat text styling */
+.gb-text {
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  color: var(--color-text);
+  font-weight: bold;
+  font-size: 16px; /* Larger */
+}
+
+.gb-text-light {
+  color: var(--color-bg);
+  font-weight: bold;
+  font-size: 16px; /* Larger */
+}
+
+/* Flat container - no effects */
+.gb-container {
+  background: var(--color-bg);
+  border: 2px solid var(--color-text);
+  padding: 20px;
+  /* Completely flat */
+}
+
+/* Flat card styling - no effects */
+.gb-card {
+  background: var(--color-bg);
+  border: 2px solid var(--color-text);
+  padding: 16px;
+  margin: 8px;
+  /* Completely flat */
+}
+
+.gb-card-common {
+  border-color: var(--color-text);
+}
+
+.gb-card-uncommon {
+  border-color: var(--color-accent);
+}
+
+.gb-card-rare {
+  border-color: var(--color-text);
+  border-width: 3px;
+}
+
+.gb-card-legendary {
+  border-color: var(--color-text);
+  border-width: 4px;
+}
+
+/* Flat letter cell styling */
+.letter-cell {
+  width: 40px; /* Bigger */
+  height: 40px; /* Bigger */
+  background: var(--color-bg);
+  border: 2px solid var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 20px; /* Much larger */
+  font-weight: bold;
+  color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
+  /* Completely flat */
+}
+
+.letter-cell:hover {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.letter-cell.selected {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.letter-cell.path {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Flat game screen */
+.game-screen {
+  width: 100vw;
+  height: calc(var(--vh, 1vh) * 100);
+  background: var(--color-bg);
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  color: var(--color-text);
+  overflow: hidden;
+  /* Completely flat */
+}
+
+/* Remove all CRT effects */
+.crt-screen {
+  background: var(--color-bg);
+  /* Completely flat */
+}
+
+.crt-screen::before,
+.crt-screen::after {
+  display: none; /* Remove all overlay effects */
+}
+
+/* Flat HTML styling */
+html {
+  height: 100%;
+  background: var(--color-bg);
+  font-size: 16px; /* Larger base size */
+}
+
+/* Remove power LED effects */
+.power-led {
+  width: 8px;
+  height: 8px;
+  background: var(--color-text);
+  /* Completely flat */
+}
+
+/* Remove all animations and keyframes */
+@keyframes gb-pixel-float,
+@keyframes gb-title-pulse,
+@keyframes goldenGlow,
+@keyframes goldenPulse,
+@keyframes vowelGlow,
+@keyframes lettro-glow,
+@keyframes lettro-pulse,
+@keyframes subtitle-shine,
+@keyframes logo-flicker,
+@keyframes crt-flicker,
+@keyframes crt-glow,
+@keyframes scanlines,
+@keyframes power-led,
+@keyframes gb-symbol-pulse,
+@keyframes gb-uncommon-glow,
+@keyframes gb-rare-glow,
+@keyframes gb-legendary-pulse {
+  /* Remove all animations for flat design */
+  0%, 100% { 
+    transform: none;
+    opacity: 1;
+    filter: none;
+    box-shadow: none;
+    text-shadow: none;
   }
 } 

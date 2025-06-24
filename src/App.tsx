@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { GameProvider } from './contexts/GameContext';
-import { MainMenu } from './components/MainMenu';
+import MainMenu from './components/MainMenu';
 import { GameView } from './components/GameView';
 import { useGame } from './hooks/useGame';
 import { testDictionaryAPI } from './utils/wordDictionary';
@@ -77,7 +77,7 @@ function AppContent() {
 
 function App() {
   return (
-    <div className="app">
+    <div className="crt-screen">
       <GameProvider>
         <AppContent />
       </GameProvider>

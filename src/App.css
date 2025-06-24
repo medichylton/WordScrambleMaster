@@ -1329,4 +1329,127 @@ body {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Enhanced Shop Animations */
+@keyframes cardFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(1deg); }
+}
+
+@keyframes emojiPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
+  50% { transform: scale(1.1); filter: drop-shadow(0 0 20px rgba(255,255,255,0.8)); }
+}
+
+@keyframes hologramSweep {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+@keyframes rarityGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(139, 92, 246, 0.8); }
+}
+
+@keyframes synergyPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* Power-up card hover effects */
+.power-card {
+  transition: all 0.3s ease;
+  transform-style: preserve-3d;
+}
+
+.power-card:hover {
+  transform: scale(1.05) rotateY(5deg);
+  z-index: 10;
+}
+
+/* Rarity-specific animations */
+.legendary-card {
+  animation: rarityGlow 2s ease-in-out infinite;
+}
+
+.rare-card {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.7);
+}
+
+.uncommon-card {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+}
+
+.common-card {
+  box-shadow: 0 0 10px rgba(107, 114, 128, 0.5);
+}
+
+/* Enhanced particle effects */
+@keyframes magicalFloat {
+  0%, 100% { 
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+    opacity: 0.6;
+  }
+  25% { 
+    transform: translateY(-10px) translateX(5px) rotate(90deg);
+    opacity: 0.8;
+  }
+  50% { 
+    transform: translateY(-5px) translateX(-5px) rotate(180deg);
+    opacity: 1;
+  }
+  75% { 
+    transform: translateY(-15px) translateX(3px) rotate(270deg);
+    opacity: 0.8;
+  }
+}
+
+/* Coin animation for reroll button */
+@keyframes coinSpin {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+.reroll-button:hover .coin-icon {
+  animation: coinSpin 0.6s ease-in-out;
+}
+
+/* Power-up activation effects */
+@keyframes powerActivation {
+  0% { 
+    transform: scale(1);
+    box-shadow: 0 0 0px rgba(255, 255, 255, 0);
+  }
+  50% { 
+    transform: scale(1.2);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+  }
+  100% { 
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+}
+
+.power-activated {
+  animation: powerActivation 0.8s ease-out;
+}
+
+/* Enhanced glow effects for different rarities */
+.glow-common {
+  box-shadow: 0 0 10px rgba(107, 114, 128, 0.5), inset 0 0 10px rgba(255,255,255,0.1);
+}
+
+.glow-uncommon {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.6), inset 0 0 15px rgba(255,255,255,0.1);
+}
+
+.glow-rare {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.7), inset 0 0 20px rgba(255,255,255,0.1);
+}
+
+.glow-legendary {
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.8), inset 0 0 25px rgba(255,255,255,0.2);
+  animation: rarityGlow 2s ease-in-out infinite;
 } 

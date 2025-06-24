@@ -67,6 +67,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       localStorage.setItem('wordScrambleGameState', JSON.stringify(powerUpState));
       return powerUpState;
 
+    case 'SPEND_COINS':
+      const amount = action.payload;
+      if (state.coins < amount) return state;
+      
+      const spendState = {
+        ...state,
+        coins: state.coins - amount
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('wordScrambleGameState', JSON.stringify(spendState));
+      return spendState;
+
     case 'NEXT_ROUND':
       const nextRound = state.currentRound + 1;
       let nextRoundState;

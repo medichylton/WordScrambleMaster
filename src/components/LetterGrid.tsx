@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateBoggleGrid, isValidWordSync, isValidWord, calculateWordScore, isValidPath, pathToWord, areAdjacent, getWordDefinition } from '../utils/wordDictionary';
+import { useGame } from '../hooks/useGame';
 
 interface Position {
   row: number;
@@ -16,6 +17,7 @@ interface LetterGridProps {
 }
 
 export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, timeRemaining, hideWordDisplay = false, foundWords = [] }: LetterGridProps) {
+  const { gameState } = useGame();
   const [grid, setGrid] = useState<string[][]>([]);
   const [selectedPath, setSelectedPath] = useState<Position[]>([]);
   const [currentWord, setCurrentWord] = useState('');
@@ -23,13 +25,38 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
   const [isSelecting, setIsSelecting] = useState(false);
   const [wordValidationStatus, setWordValidationStatus] = useState<'checking' | 'valid' | 'invalid' | 'unknown' | 'already-found'>('unknown');
   const [moveHistory, setMoveHistory] = useState<{word: string, path: Position[], score: number, timestamp: number}[]>([]);
+  const [chainCount, setChainCount] = useState(0);
+  const [goldenLetters, setGoldenLetters] = useState<Set<string>>(new Set());
 
   // Use foundWords prop if provided, otherwise use local state
   const allFoundWords = foundWords.length > 0 ? foundWords : localFoundWords;
 
+  // Power-up effect helpers
+  const hasGoldenLetters = gameState.powerUps.some(p => p.effect.type === 'goldenLetters');
+  const hasVowelPower = gameState.powerUps.some(p => p.effect.type === 'vowelBonus');
+  const hasLetterGod = gameState.powerUps.some(p => p.effect.type === 'letterGod');
+  const chainMultiplier = gameState.powerUps.find(p => p.effect.type === 'chainMultiplier')?.effect.value || 0;
+  const letterMultiplier = gameState.powerUps.find(p => p.effect.type === 'letterMultiplier')?.effect.value || 0;
+  const longWordMultiplier = gameState.powerUps.find(p => p.effect.type === 'longWordMultiplier');
+  const exponentialGrowth = gameState.powerUps.find(p => p.effect.type === 'exponentialGrowth');
+
   useEffect(() => {
-    setGrid(generateBoggleGrid());
-  }, []);
+    const newGrid = generateBoggleGrid();
+    setGrid(newGrid);
+    
+    // Initialize golden letters if power-up is active
+    if (hasGoldenLetters) {
+      const goldenCount = gameState.powerUps.find(p => p.effect.type === 'goldenLetters')?.effect.count || 3;
+      const flatLetters = newGrid.flat();
+      const randomGolden = new Set<string>();
+      
+      for (let i = 0; i < goldenCount && i < flatLetters.length; i++) {
+        const randomIndex = Math.floor(Math.random() * flatLetters.length);
+        randomGolden.add(`${Math.floor(randomIndex / 4)}-${randomIndex % 4}`);
+      }
+      setGoldenLetters(randomGolden);
+    }
+  }, [hasGoldenLetters]);
 
   useEffect(() => {
     if (selectedPath.length > 0) {
@@ -69,6 +96,113 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
       onCurrentWordChange?.('');
     }
   }, [selectedPath, grid, onCurrentWordChange, allFoundWords]);
+
+  // Enhanced score calculation with power-ups
+  const calculateEnhancedScore = (word: string): number => {
+    const timeBonus = timeRemaining > 60 ? 1.5 : timeRemaining > 30 ? 1.2 : 1.0;
+    let baseScore = calculateWordScore(word, timeBonus);
+    
+    // Apply letter multiplier
+    if (letterMultiplier > 0) {
+      baseScore += word.length * letterMultiplier;
+    }
+    
+    // Apply vowel bonus
+    if (hasVowelPower) {
+      const vowelBonus = gameState.powerUps.find(p => p.effect.type === 'vowelBonus')?.effect.value || 2;
+      const vowelCount = word.split('').filter(letter => 'aeiouAEIOU'.includes(letter)).length;
+      baseScore += vowelCount * vowelBonus;
+    }
+    
+    // Apply chain multiplier
+    if (chainMultiplier > 0) {
+      baseScore += chainCount * chainMultiplier;
+    }
+    
+    // Apply long word multiplier
+    if (longWordMultiplier && word.length >= longWordMultiplier.minLength) {
+      baseScore *= longWordMultiplier.multiplier;
+    }
+    
+    // Apply golden letter bonus
+    const pathGoldenCount = selectedPath.filter(pos => 
+      goldenLetters.has(`${pos.row}-${pos.col}`)
+    ).length;
+    if (pathGoldenCount > 0) {
+      baseScore *= (1 + pathGoldenCount * 2); // 3x per golden letter
+    }
+    
+    // Apply exponential growth
+    if (exponentialGrowth) {
+      const growthFactor = Math.pow(exponentialGrowth.multiplier, allFoundWords.length);
+      baseScore *= growthFactor;
+    }
+    
+    return Math.round(baseScore);
+  };
+
+  const isVowel = (letter: string): boolean => {
+    return 'aeiouAEIOU'.includes(letter);
+  };
+
+  const isGoldenLetter = (row: number, col: number): boolean => {
+    return goldenLetters.has(`${row}-${col}`);
+  };
+
+  const getLetterStyle = (row: number, col: number, letter: string) => {
+    const isSelected = isCellSelected(row, col);
+    const isInPath = isCellInPath(row, col);
+    const isGolden = isGoldenLetter(row, col);
+    const isVowelWithPower = hasVowelPower && isVowel(letter);
+    
+    let background = 'var(--gradient-primary)';
+    let boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+    let color = 'white';
+    let animation = '';
+    
+    if (isSelected) {
+      background = isGolden ? 
+        'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffc107 100%)' :
+        isVowelWithPower ?
+        'linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #fb7185 100%)' :
+        'var(--gradient-accent)';
+      boxShadow = isGolden ? 
+        '0 0 25px rgba(255, 215, 0, 0.8), 0 0 50px rgba(255, 215, 0, 0.4)' :
+        isVowelWithPower ?
+        '0 0 20px rgba(236, 72, 153, 0.8)' :
+        '0 0 20px var(--glow-blue)';
+      animation = isGolden ? 'goldenPulse 1s ease-in-out infinite' : '';
+    } else if (isInPath) {
+      background = isGolden ? 
+        'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffc107 100%)' :
+        isVowelWithPower ?
+        'linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #fb7185 100%)' :
+        'var(--gradient-secondary)';
+      boxShadow = isGolden ? 
+        '0 0 15px rgba(255, 215, 0, 0.6)' :
+        isVowelWithPower ?
+        '0 0 15px rgba(236, 72, 153, 0.6)' :
+        '0 0 15px var(--glow-green)';
+    } else if (isGolden) {
+      background = 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffc107 100%)';
+      boxShadow = '0 0 10px rgba(255, 215, 0, 0.4)';
+      animation = 'goldenGlow 2s ease-in-out infinite';
+      color = '#8b4513';
+    } else if (isVowelWithPower) {
+      background = 'linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #fb7185 100%)';
+      boxShadow = '0 0 10px rgba(236, 72, 153, 0.4)';
+      animation = 'vowelGlow 2s ease-in-out infinite';
+    }
+    
+    return {
+      background,
+      boxShadow,
+      color,
+      animation,
+      fontWeight: (isGolden || isVowelWithPower) ? 'bold' : 'normal',
+      textShadow: (isGolden || isVowelWithPower) ? '0 0 10px rgba(255,255,255,0.8)' : '1px 1px 0px rgba(0,0,0,0.5)'
+    };
+  };
 
   const getCellFromPoint = (clientX: number, clientY: number): Position | null => {
     const element = document.elementFromPoint(clientX, clientY);
@@ -181,8 +315,12 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
       }
       
       if (isValid) {
-        const timeBonus = timeRemaining > 60 ? 1.5 : timeRemaining > 30 ? 1.2 : 1.0;
-        const score = calculateWordScore(currentWord, timeBonus);
+        const score = calculateEnhancedScore(currentWord);
+        
+        // Update chain count for chain multiplier power-up
+        if (chainMultiplier > 0) {
+          setChainCount(prev => prev + 1);
+        }
         
         // Add to move history
         const move = {
@@ -297,6 +435,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
             const isSelected = isCellSelected(rowIndex, colIndex);
             const isInPath = isCellInPath(rowIndex, colIndex);
             const selectionOrder = getCellSelectionOrder(rowIndex, colIndex);
+            const letterStyle = getLetterStyle(rowIndex, colIndex, letter);
             
             return (
               <div
@@ -304,6 +443,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
                 className={`letter-cell ${isSelected ? 'selected' : ''} ${isInPath ? 'path' : ''}`}
                 data-row={rowIndex}
                 data-col={colIndex}
+                style={letterStyle}
                 onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
               >
@@ -334,8 +474,6 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
           SHUFFLE
         </button>
       </div>
-
-
 
       {/* Move History Debug (can be removed in production) */}
       {process.env.NODE_ENV === 'development' && moveHistory.length > 0 && (
