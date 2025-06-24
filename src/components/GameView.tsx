@@ -3,7 +3,7 @@ import { useGame } from '../hooks/useGame';
 import { GameState, Challenge, PerkEffect, PerkEffectType, InventoryItem, Rarity } from '../types/game';
 import { LetterGrid } from './LetterGrid';
 import MainMenu from './MainMenu';
-import { generateRandomPowerCard, getPerkEmoji, convertPerkEffectToItemEffect } from '../utils/gameUtils';
+import { generateRandomPowerCard, getPerkEmoji, convertPerkEffectToItemEffect, getLevelTimeLimit, getLevelEffects } from '../utils/gameUtils';
 import { applyPowerCardEffects, PowerCardContext } from '../utils/powerCardEffects';
 
 export function GameView() {
@@ -44,6 +44,8 @@ function ChallengeSelection() {
   const generateCurrentLevelChallenge = () => {
     const level = gameState.currentLevel;
     const baseScore = 30 + (level * 5);
+    const levelEffects = getLevelEffects(level);
+    const timeLimit = getLevelTimeLimit(level, 120);
     
     return {
       type: 'standard',
@@ -51,12 +53,16 @@ function ChallengeSelection() {
       description: 'Find words in the grid',
       icon: '>>',
       targetScore: calculateTargetScore(baseScore),
-      timeLimit: 120,
+      timeLimit: timeLimit,
       coinReward: Math.floor(15 + (level * 2)),
       disadvantages: [
-        'No time extensions',
-        'Limited word length bonus'
-      ],
+        levelEffects.vowelReduction > 0 ? `${Math.round(levelEffects.vowelReduction * 100)}% fewer vowels` : '',
+        levelEffects.diagonalBlocked ? 'No diagonal connections' : '',
+        levelEffects.minWordLength > 3 ? `Minimum ${levelEffects.minWordLength}-letter words` : '',
+        levelEffects.timeReduction > 0 ? `Time reduced by ${levelEffects.timeReduction}s` : '',
+        levelEffects.consonantBonus > 0 ? `Consonants worth +${levelEffects.consonantBonus} points` : '',
+        levelEffects.palindromeBonus > 1 ? `Palindromes worth ${levelEffects.palindromeBonus}x points` : ''
+      ].filter(Boolean),
       skipPerk: generateRandomPowerCard(gameState.currentLevel)
     };
   };
@@ -489,6 +495,7 @@ function PlayingChallenge() {
   const [showScoreBonus, setShowScoreBonus] = useState<number | null>(null);
   const [powerCardMessages, setPowerCardMessages] = useState<string[]>([]);
   const [shuffleKey, setShuffleKey] = useState(0);
+  const [wordFoundMessage, setWordFoundMessage] = useState('');
   
   useEffect(() => {
     const timer = setInterval(() => {
@@ -505,63 +512,42 @@ function PlayingChallenge() {
   }, []);
   
   const handleWordFound = (word: string, score: number) => {
-    // Apply power card effects to the word
-    const powerCardContext: PowerCardContext = {
-      currentWord: word,
-      currentScore: currentScore,
-      totalScore: gameState.totalScore,
-      wordsFound: wordsFound,
-      timeRemaining: timeRemaining,
-      grid: [], // We don't have grid data here, but power cards can still work
-      coins: gameState.coins,
-      activePerks: gameState.activePerks || [],
-      level: gameState.currentLevel
-    };
-
-    const powerCardResult = applyPowerCardEffects(word, score, powerCardContext);
-    
-    // Apply the power card modifications
-    const finalScore = Math.floor(score * powerCardResult.scoreModifier);
-    const coinBonus = powerCardResult.coinBonus;
-    const timeBonus = powerCardResult.timeBonus;
-    
-    // Show power card messages if any
-    if (powerCardResult.messages.length > 0) {
-      setPowerCardMessages(powerCardResult.messages);
-      // Clear messages after 3 seconds
-      setTimeout(() => setPowerCardMessages([]), 3000);
+    if (gameState.currentChallenge && wordsFound.includes(word)) {
+      setWordFoundMessage('Word already found!');
+      setTimeout(() => setWordFoundMessage(''), 2000);
+      return;
     }
 
-    setWordsFound(prev => [...prev, word]);
-    setCurrentScore(prev => {
-      const newScore = prev + finalScore;
-      // Check if we've reached the target score
-      const targetScore = gameState.currentChallenge?.targetScore || 500;
-      if (newScore >= targetScore) {
-        // Delay completion slightly to show the final score
-        setTimeout(() => {
-          handleChallengeComplete(newScore);
-        }, 1000);
+    // Dispatch word submission to apply power card effects
+    dispatch({
+      type: 'SUBMIT_WORD',
+      payload: {
+        word,
+        positions: [], // Would need to pass actual positions from LetterGrid
+        timeTaken: 0 // Would calculate actual time taken
       }
-      return newScore;
     });
+
+    const newWordsFound = [...wordsFound, word];
+    setWordsFound(newWordsFound);
     
-    // Add coin bonus if any
-    if (coinBonus > 0) {
-      dispatch({ type: 'SPEND_COINS', payload: -coinBonus }); // Negative to add coins
+    // Get the actual final score from game state (after power card effects)
+    const finalScore = gameState.challengeProgress?.currentScore || 0;
+    setCurrentScore(finalScore);
+    
+    // Display power card effects if any
+    if (gameState.lastWordEffects && gameState.lastWordEffects.length > 0) {
+      setWordFoundMessage(`${word.toUpperCase()} found! ${gameState.lastWordEffects.join(' ')}`);
+    } else {
+      setWordFoundMessage(`${word.toUpperCase()} found! +${score} points`);
     }
     
-    // Add time bonus if any
-    if (timeBonus > 0) {
-      setTimeRemaining(prev => prev + timeBonus);
+    setTimeout(() => setWordFoundMessage(''), 3000);
+
+    // Check if challenge is complete
+    if (gameState.currentChallenge && finalScore >= gameState.currentChallenge.targetScore) {
+      handleChallengeComplete(finalScore);
     }
-    
-    // Enhanced score bonus animation based on word length and score
-    setShowScoreBonus(finalScore);
-    
-    // Different animation duration based on score magnitude
-    const animationDuration = finalScore >= 11 ? 1500 : finalScore >= 5 ? 1200 : 1000;
-    setTimeout(() => setShowScoreBonus(null), animationDuration);
   };
   
   const handleScoreUpdate = (score: number) => {
@@ -807,6 +793,28 @@ function PlayingChallenge() {
           foundWords={wordsFound}
         />
       </div>
+
+      {/* Word Found Message Display */}
+      {wordFoundMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '40%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 1000,
+          background: 'var(--color-bg)',
+          border: '3px solid var(--color-text)',
+          padding: '16px',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          color: 'var(--color-text)',
+          textAlign: 'center',
+          maxWidth: '80%',
+          animation: 'fadeInOut 3s ease-in-out'
+        }}>
+          {wordFoundMessage}
+        </div>
+      )}
 
       {/* Power Card Effects Display */}
       {powerCardMessages.length > 0 && (

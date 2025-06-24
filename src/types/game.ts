@@ -24,6 +24,9 @@ export interface GameState {
   gameStarted: boolean;
   isGameActive: boolean;
   
+  // Power Card Effects
+  lastWordEffects?: string[];
+  
   // Legacy Compatibility
   currentRound: number;
   letterEnhancers: LetterEnhancer[];

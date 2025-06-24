@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { generateBoggleGrid, isValidWordSync, isValidWord, calculateWordScore, isValidPath, pathToWord, areAdjacent, getWordDefinition } from '../utils/wordDictionary';
 import { useGame } from '../hooks/useGame';
+import { generateLevelAdjustedGrid, isValidLevelMove, applyLevelScoring, getLevelEffects, getLevelTimeLimit } from '../utils/gameUtils';
 
 interface Position {
   row: number;
@@ -44,7 +45,8 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
   const exponentialGrowth = gameState.powerUps.find(p => p.effect.type === 'exponentialGrowth');
 
   useEffect(() => {
-    const newGrid = generateBoggleGrid();
+    // Use level-adjusted grid generation instead of basic Boggle grid
+    const newGrid = generateLevelAdjustedGrid(gameState.currentLevel);
     setGrid(newGrid);
     
     // Initialize golden letters if power-up is active
@@ -59,7 +61,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
       }
       setGoldenLetters(randomGolden);
     }
-  }, [hasGoldenLetters]);
+  }, [hasGoldenLetters, gameState.currentLevel]);
 
   useEffect(() => {
     if (selectedPath.length > 0) {
@@ -100,10 +102,18 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
     }
   }, [selectedPath, grid, onCurrentWordChange, allFoundWords]);
 
-  // Enhanced score calculation with power-ups
+  // Enhanced score calculation with power-ups AND level effects
   const calculateEnhancedScore = (word: string): number => {
     const timeBonus = timeRemaining > 60 ? 1.5 : timeRemaining > 30 ? 1.2 : 1.0;
     let baseScore = calculateWordScore(word, timeBonus);
+    
+    // Apply level effects first
+    baseScore = applyLevelScoring(gameState.currentLevel, word, baseScore, allFoundWords);
+    
+    // If level effects invalidate the word, return 0
+    if (baseScore === 0) {
+      return 0;
+    }
     
     // Apply letter multiplier
     if (letterMultiplier > 0) {
@@ -286,26 +296,28 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
   };
 
   const handleMouseEnter = (row: number, col: number) => {
-    if (!isSelecting || !lastTouchPosition) return;
-    
-    const cell = { row, col };
-    
-    // Check if movement is significant enough
-    if (!isSignificantMovement(lastTouchPosition, cell)) {
-      return;
-    }
-    
-    const existingIndex = selectedPath.findIndex(pos => pos.row === row && pos.col === col);
-    
-    if (existingIndex !== -1) {
-      // Backtrack to this position
-      setSelectedPath(selectedPath.slice(0, existingIndex + 1));
-    } else if (selectedPath.length > 0) {
-      const lastPos = selectedPath[selectedPath.length - 1];
-      // Use enhanced adjacency checking
-      if (areAdjacent(lastPos, cell)) {
-        setSelectedPath([...selectedPath, cell]);
-        setLastTouchPosition(cell);
+    if (isSelecting) {
+      const newPos = { row, col };
+      
+      // Check if this is a valid level move
+      if (selectedPath.length > 0) {
+        const lastPos = selectedPath[selectedPath.length - 1];
+        if (!isValidLevelMove(gameState.currentLevel, lastPos, newPos)) {
+          return; // Invalid move for this level
+        }
+      }
+      
+      // Check if cell is already in path
+      const existingIndex = selectedPath.findIndex(pos => pos.row === row && pos.col === col);
+      
+      if (existingIndex === -1) {
+        // Add new cell if adjacent to last cell or if it's the first cell
+        if (selectedPath.length === 0 || areAdjacent(selectedPath[selectedPath.length - 1], newPos)) {
+          setSelectedPath([...selectedPath, newPos]);
+        }
+      } else if (existingIndex === selectedPath.length - 2) {
+        // Backtrack to previous cell
+        setSelectedPath(selectedPath.slice(0, -1));
       }
     }
   };

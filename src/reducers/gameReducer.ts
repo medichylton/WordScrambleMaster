@@ -316,8 +316,63 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'SUBMIT_WORD':
-      // Handle word submission logic here
-      return state;
+      const { word, positions, timeTaken } = action.payload;
+      
+      // Calculate base score (simple scoring for now)
+      let baseScore = word.length * 10;
+      
+      // Apply power card effects if we have active perks
+      const activePerks = state.inventory.map(item => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        rarity: item.rarity,
+        effect: item.effect
+      }));
+      
+      let finalScore = baseScore;
+      let coinBonus = 0;
+      let effectMessages: string[] = [];
+      
+      if (activePerks.length > 0) {
+        // Import power card effects
+        const { applyPowerCardEffects } = require('../utils/powerCardEffects');
+        
+        const context = {
+          currentWord: word,
+          currentScore: baseScore,
+          totalScore: state.totalScore,
+          wordsFound: state.challengeProgress?.wordsFound || [],
+          timeRemaining: state.challengeProgress?.timeRemaining || 0,
+          grid: [], // Would be passed from component
+          coins: state.coins,
+          activePerks: activePerks,
+          level: state.currentLevel
+        };
+        
+        const powerCardResult = applyPowerCardEffects(word, baseScore, context);
+        finalScore = Math.floor(baseScore * powerCardResult.scoreModifier);
+        coinBonus = powerCardResult.coinBonus;
+        effectMessages = powerCardResult.messages;
+      }
+      
+      // Update challenge progress
+      const updatedProgress = {
+        ...state.challengeProgress,
+        currentScore: (state.challengeProgress?.currentScore || 0) + finalScore,
+        wordsFound: [...(state.challengeProgress?.wordsFound || []), word]
+      };
+      
+      const wordSubmitState = {
+        ...state,
+        challengeProgress: updatedProgress,
+        coins: state.coins + coinBonus,
+        // Store effect messages for UI display
+        lastWordEffects: effectMessages
+      };
+      
+      localStorage.setItem('wordScrambleGameState', JSON.stringify(wordSubmitState));
+      return wordSubmitState;
 
     case 'SKIP_CHALLENGE':
       // Handle challenge skipping logic here
