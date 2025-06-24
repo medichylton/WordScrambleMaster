@@ -1,35 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from '../hooks/useGame';
-import { useSettings } from '../contexts/SettingsContext';
 import { DifficultyStake } from '../types/game';
 import SettingsMenu from './SettingsMenu';
 
 const MainMenu: React.FC = () => {
-  const { dispatch } = useGame();
-  const { settings } = useSettings();
+  const { gameState, startGame, resetGame } = useGame();
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   
-  // Check if there's a saved game
-  const hasSavedGame = localStorage.getItem('wordScrambleGameState') !== null;
-  
-  const handleStartGame = (stake: DifficultyStake) => {
-    dispatch({ type: 'START_NEW_RUN', payload: { stake } });
-  };
-  
-  const continueGame = () => {
-    // Load saved state
+  // Load saved game state on component mount
+  useEffect(() => {
     const savedState = localStorage.getItem('wordScrambleGameState');
     if (savedState) {
       try {
         const parsedState = JSON.parse(savedState);
-        dispatch({ type: 'LOAD_GAME', payload: parsedState });
+        if (parsedState.gameStarted && parsedState.isGameActive) {
+          // Auto-resume if there's an active game
+          // The game will automatically load the saved state
+        }
       } catch (error) {
-        console.error('Failed to load saved game:', error);
-        handleStartGame('apprentice');
+        console.error('Failed to parse saved game state:', error);
+        localStorage.removeItem('wordScrambleGameState');
       }
-    } else {
-      handleStartGame('apprentice');
+    }
+  }, []);
+
+  const handleNewGame = () => {
+    resetGame();
+    startGame('apprentice');
+  };
+
+  const handleContinueGame = () => {
+    // Game will automatically load from localStorage
+    startGame(gameState.difficultyStake || 'apprentice');
+  };
+
+  const hasSavedGame = () => {
+    const savedState = localStorage.getItem('wordScrambleGameState');
+    if (!savedState) return false;
+    
+    try {
+      const parsedState = JSON.parse(savedState);
+      return parsedState.gameStarted && parsedState.isGameActive;
+    } catch {
+      return false;
     }
   };
 
@@ -59,341 +73,183 @@ const MainMenu: React.FC = () => {
   ];
 
   return (
-    <div 
-      className="crt-screen"
-      style={{
-        width: '100vw',
-        height: 'calc(var(--vh, 1vh) * 100)',
-        background: 'var(--color-bg)',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+    <div style={{
+      width: '100vw',
+      height: 'calc(var(--vh, 1vh) * 100)',
+      background: '#9BBB0F', // Game Boy light green
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      paddingTop: `calc(env(safe-area-inset-top, 0px) + 20px)`,
+      paddingBottom: `calc(20px + env(safe-area-inset-bottom, 0px))`,
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      overflow: 'hidden'
+    }}>
+      {/* Game Title */}
+      <div style={{
+        fontSize: '32px',
+        fontWeight: 'bold',
+        color: '#0F380F',
+        textAlign: 'center',
+        marginBottom: '40px',
         fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-        color: 'var(--color-text)',
-        padding: '20px',
-        boxSizing: 'border-box',
-        overflow: 'hidden'
-      }}
-    >
-      {/* Power LED - completely flat */}
-      <div 
-        className="power-led"
-        style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          width: '12px',
-          height: '12px',
-          background: 'var(--color-text)'
-        }}
-      />
-
-      {/* LETTRO Logo - much larger and flat */}
-      <div 
-        style={{
-          textAlign: 'center',
-          marginBottom: '40px'
-        }}
-      >
-        <h1 
-          style={{
-            fontSize: '48px', /* Much larger */
-            fontWeight: 'bold',
-            color: 'var(--color-text)',
-            margin: '0 0 16px 0',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            letterSpacing: '4px',
-            textTransform: 'uppercase',
-            lineHeight: '1'
-          }}
-        >
-          LETTRO
-        </h1>
-        
-        <div 
-          style={{
-            fontSize: '20px', /* Much larger */
-            fontWeight: 'bold',
-            background: 'var(--color-accent)',
-            color: 'var(--color-bg)',
-            padding: '8px 16px',
-            border: '2px solid var(--color-text)',
-            display: 'inline-block',
-            textTransform: 'uppercase',
-            letterSpacing: '2px'
-          }}
-        >
-          WORD SCRAMBLE MASTER
-        </div>
+        textTransform: 'uppercase',
+        lineHeight: 1.2
+      }}>
+        Word Scramble<br/>Master
       </div>
 
-      {/* Challenge Selection - much larger buttons */}
-      <div 
-        style={{
+      {/* Game Boy Style Frame */}
+      <div style={{
+        background: '#9BBB0F',
+        border: '4px solid #0F380F',
+        padding: '32px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        minWidth: '300px',
+        maxWidth: '400px',
+        width: '100%'
+      }}>
+        {/* Main Menu Buttons */}
+        <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '20px',
-          width: '100%',
-          maxWidth: '400px',
+          gap: '16px',
           alignItems: 'center'
-        }}
-      >
-        <h2 
-          style={{
-            fontSize: '24px', /* Much larger */
-            fontWeight: 'bold',
-            color: 'var(--color-text)',
-            margin: '0 0 20px 0',
-            textAlign: 'center',
-            textTransform: 'uppercase',
-            letterSpacing: '2px'
-          }}
-        >
-          SELECT CHALLENGE
-        </h2>
-
-        <button
-          className="gb-button"
-          onClick={() => handleStartGame('apprentice')}
-          style={{
-            width: '100%',
-            fontSize: '20px', /* Much larger */
-            padding: '16px 24px',
-            background: 'var(--color-bg)',
-            border: '3px solid var(--color-text)',
-            color: 'var(--color-text)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: '2px',
-            cursor: 'pointer'
-          }}
-        >
-          &gt;&gt; APPRENTICE - BEGINNER
-        </button>
-
-        <button
-          className="gb-button"
-          onClick={() => handleStartGame('scholar')}
-          style={{
-            width: '100%',
-            fontSize: '20px', /* Much larger */
-            padding: '16px 24px',
-            background: 'var(--color-bg)',
-            border: '3px solid var(--color-text)',
-            color: 'var(--color-text)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: '2px',
-            cursor: 'pointer'
-          }}
-        >
-          ** SCHOLAR - INTERMEDIATE
-        </button>
-
-        <button
-          className="gb-button"
-          onClick={() => handleStartGame('expert')}
-          style={{
-            width: '100%',
-            fontSize: '20px', /* Much larger */
-            padding: '16px 24px',
-            background: 'var(--color-bg)',
-            border: '3px solid var(--color-text)',
-            color: 'var(--color-text)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: '2px',
-            cursor: 'pointer'
-          }}
-        >
-          ## EXPERT - ADVANCED
-        </button>
-      </div>
-
-      {/* Game Info - larger text */}
-      <div 
-        style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '20px',
-          right: '20px',
-          textAlign: 'center'
-        }}
-      >
-        <div 
-          style={{
-            fontSize: '16px', /* Much larger */
-            color: 'var(--color-text)',
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
-          }}
-        >
-          FIND WORDS IN THE GRID
-        </div>
-        <div 
-          style={{
-            fontSize: '14px', /* Larger */
-            color: 'var(--color-accent)',
-            fontWeight: 'bold',
-            marginTop: '8px',
-            textTransform: 'uppercase'
-          }}
-        >
-          CONNECT ADJACENT LETTERS
-        </div>
-      </div>
-
-      {/* Menu Options - Stacked Vertically */}
-      <div style={{
-        position: 'absolute',
-        bottom: '80px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '12px',
-        zIndex: 5,
-        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 20px)`
-      }}>
-        <button
-          onClick={() => setShowSettings(true)}
-          className="gb-button"
-          style={{
-            padding: '12px 20px',
-            fontSize: '16px',
-            background: 'var(--color-bg)',
-            color: 'var(--color-text)',
-            border: '3px solid var(--color-text)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            minWidth: '140px'
-          }}
-        >
-          [*] SETTINGS
-        </button>
-        
-        <button
-          onClick={() => setShowHowToPlay(true)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--color-accent)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontSize: '14px',
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            textDecoration: 'underline',
-            padding: '4px 8px'
-          }}
-        >
-          [?] HOW TO PLAY
-        </button>
-      </div>
-
-      {/* How to Play Modal - Authentic Game Boy Style */}
-      {showHowToPlay && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
         }}>
-          <div style={{
-            maxWidth: '400px',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            background: 'var(--color-bg)',
-            border: '3px solid var(--color-text)',
-            padding: '20px'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              marginBottom: '16px',
-              textAlign: 'center',
-              color: 'var(--color-text)',
-              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-              fontWeight: 'bold',
-              textTransform: 'uppercase'
-            }}>
-              [?] HOW TO PLAY
-            </h2>
-            
-            <div style={{
-              fontSize: '14px',
-              lineHeight: '1.4',
-              marginBottom: '16px',
-              color: 'var(--color-text)',
-              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
-            }}>
-              <div style={{ marginBottom: '12px' }}>
-                <strong>OBJECTIVE:</strong><br/>
-                Find words by connecting adjacent letters on the grid.
-              </div>
-              
-              <div style={{ marginBottom: '12px' }}>
-                <strong>CONTROLS:</strong><br/>
-                • Tap letters to select them<br/>
-                • Connect adjacent letters (including diagonals)<br/>
-                • Tap the last letter again to submit word
-              </div>
-              
-              <div style={{ marginBottom: '12px' }}>
-                <strong>SCORING:</strong><br/>
-                • 2-letter words: 3 points<br/>
-                • 3-4 letter words: 5 points<br/>
-                • 5+ letter words: 8-25 points
-              </div>
-              
-              <div>
-                <strong>TIPS:</strong><br/>
-                • Longer words score more points<br/>
-                • Look for common word patterns<br/>
-                • Use all available time wisely
-              </div>
-            </div>
-            
+          {hasSavedGame() && (
             <button
-              onClick={() => setShowHowToPlay(false)}
+              onClick={handleContinueGame}
               className="gb-button"
               style={{
                 width: '100%',
-                padding: '12px',
-                fontSize: '16px',
-                background: 'var(--color-accent)',
-                color: 'var(--color-bg)',
-                border: '3px solid var(--color-text)',
-                fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                background: '#0F380F',
+                color: '#9BBB0F',
+                border: '3px solid #0F380F',
+                padding: '16px 24px',
+                fontSize: '18px',
                 fontWeight: 'bold',
                 textTransform: 'uppercase',
                 cursor: 'pointer'
               }}
             >
-              [B] BACK
+              Continue Game
             </button>
-          </div>
+          )}
+          
+          <button
+            onClick={handleNewGame}
+            className="gb-button"
+            style={{
+              width: '100%',
+              background: '#0F380F',
+              color: '#9BBB0F',
+              border: '3px solid #0F380F',
+              padding: '16px 24px',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              cursor: 'pointer'
+            }}
+          >
+            New Game
+          </button>
         </div>
-      )}
 
-      {/* Settings Menu */}
+        {/* Secondary Buttons - Stacked Vertically */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          alignItems: 'center',
+          marginTop: '20px'
+        }}>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="gb-button"
+            style={{
+              background: '#8BAC0F',
+              color: '#0F380F',
+              border: '2px solid #0F380F',
+              padding: '12px 20px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              cursor: 'pointer'
+            }}
+          >
+            Settings
+          </button>
+          
+          <a
+            href="https://github.com/yourusername/wordscramblemaster"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: '#0F380F',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              textDecoration: 'underline',
+              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+              textTransform: 'uppercase'
+            }}
+          >
+            Help & Info
+          </a>
+        </div>
+
+        {/* Game Stats */}
+        {gameState.lifetimeCoins > 0 && (
+          <div style={{
+            borderTop: '2px solid #0F380F',
+            paddingTop: '16px',
+            marginTop: '16px',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '14px',
+              color: '#0F380F',
+              fontWeight: 'bold',
+              marginBottom: '8px'
+            }}>
+              Lifetime Stats
+            </div>
+            <div style={{
+              fontSize: '12px',
+              color: '#0F380F',
+              fontWeight: 'bold'
+            }}>
+              Coins Earned: ◉ {gameState.lifetimeCoins}
+            </div>
+            <div style={{
+              fontSize: '12px',
+              color: '#0F380F',
+              fontWeight: 'bold'
+            }}>
+              Current Run: {gameState.currentRun}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Version Info */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        fontSize: '10px',
+        color: '#0F380F',
+        fontWeight: 'bold',
+        opacity: 0.7
+      }}>
+        v1.0.0 • Game Boy Edition
+      </div>
+
+      {/* Settings Modal */}
       {showSettings && (
         <SettingsMenu onClose={() => setShowSettings(false)} />
       )}

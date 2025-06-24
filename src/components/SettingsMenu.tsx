@@ -5,371 +5,459 @@ interface SettingsMenuProps {
   onClose: () => void;
 }
 
-const SettingsMenu: React.FC<SettingsMenuProps> = ({ onClose }) => {
-  const { settings, updateSetting, resetSettings } = useSettings();
+export default function SettingsMenu({ onClose }: SettingsMenuProps) {
+  const { settings, updateSettings } = useSettings();
 
-  const SettingToggle: React.FC<{
-    label: string;
-    value: boolean;
-    onChange: (value: boolean) => void;
-    description?: string;
-  }> = ({ label, value, onChange, description }) => (
-    <div style={{ marginBottom: '16px' }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '4px'
-      }}>
-        <span style={{
-          fontSize: '14px',
-          fontWeight: 'bold',
-          color: 'var(--color-text)',
-          fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
-        }}>
-          {label}
-        </span>
-        <button
-          onClick={() => onChange(!value)}
-          style={{
-            width: '40px',
-            height: '20px',
-            background: value ? 'var(--color-accent)' : 'var(--color-bg)',
-            border: '2px solid var(--color-text)',
-            cursor: 'pointer',
-            position: 'relative'
-          }}
-        >
-          <div style={{
-            width: '16px',
-            height: '16px',
-            background: 'var(--color-text)',
-            position: 'absolute',
-            top: '0px',
-            left: value ? '20px' : '0px',
-            transition: 'left 0.2s ease'
-          }} />
-        </button>
-      </div>
-      {description && (
-        <div style={{
-          fontSize: '11px',
-          color: 'var(--color-accent)',
-          fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
-        }}>
-          {description}
-        </div>
-      )}
-    </div>
-  );
-
-  const SettingSelect: React.FC<{
-    label: string;
-    value: string;
-    options: Array<{ value: string; label: string; description?: string }>;
-    onChange: (value: string) => void;
-  }> = ({ label, value, options, onChange }) => (
-    <div style={{ marginBottom: '16px' }}>
-      <div style={{
-        fontSize: '14px',
-        fontWeight: 'bold',
-        color: 'var(--color-text)',
-        marginBottom: '8px',
-        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
-      }}>
-        {label}
-      </div>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          width: '100%',
-          padding: '8px',
-          background: 'var(--color-bg)',
-          color: 'var(--color-text)',
-          border: '2px solid var(--color-text)',
-          fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-          fontSize: '12px'
-        }}
-      >
-        {options.map(option => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
+  const handleSettingChange = (key: string, value: any) => {
+    updateSettings({ [key]: value });
+  };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.8)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '20px'
-    }}>
-      <div style={{
+    <div className="gb-modal">
+      <div className="gb-modal-content" style={{
+        background: '#9BBB0F',
+        border: '4px solid #0F380F',
         maxWidth: '500px',
-        maxHeight: '90vh',
-        overflow: 'auto',
-        background: 'var(--color-bg)',
-        border: '3px solid var(--color-text)',
-        padding: '20px',
-        width: '100%'
+        width: '90%',
+        maxHeight: '80vh',
+        overflow: 'auto'
       }}>
-        <h2 style={{
-          fontSize: '18px',
-          marginBottom: '20px',
-          textAlign: 'center',
-          color: 'var(--color-text)',
-          fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-          fontWeight: 'bold',
-          textTransform: 'uppercase'
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '24px',
+          borderBottom: '2px solid #0F380F',
+          paddingBottom: '16px'
         }}>
-          [*] SETTINGS MENU
-        </h2>
-
-        {/* Visual Settings Section */}
-        <div style={{ marginBottom: '24px' }}>
-          <h3 style={{
-            fontSize: '16px',
-            marginBottom: '12px',
-            color: 'var(--color-accent)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+          <h2 style={{
+            fontSize: '24px',
             fontWeight: 'bold',
+            color: '#0F380F',
+            margin: 0,
             textTransform: 'uppercase',
-            borderBottom: '2px solid var(--color-text)',
-            paddingBottom: '4px'
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
           }}>
-            VISUAL SETTINGS
-          </h3>
-          
-          <SettingToggle
-            label="CRT Effect"
-            value={settings.crtEffect}
-            onChange={(value) => updateSetting('crtEffect', value)}
-            description="Enable authentic CRT screen effect"
-          />
-          
-          <SettingToggle
-            label="Animations"
-            value={settings.animations}
-            onChange={(value) => updateSetting('animations', value)}
-            description="Enable smooth animations and transitions"
-          />
-          
-          <SettingToggle
-            label="Scanlines"
-            value={settings.scanlines}
-            onChange={(value) => updateSetting('scanlines', value)}
-            description="Add retro scanline effect"
-          />
-          
-          <SettingToggle
-            label="Pixel Perfect"
-            value={settings.pixelPerfect}
-            onChange={(value) => updateSetting('pixelPerfect', value)}
-            description="Enable pixel-perfect rendering"
-          />
-          
-          <SettingSelect
-            label="Color Scheme"
-            value={settings.colorScheme}
-            options={[
-              { value: 'gameboy', label: 'Game Boy Green', description: 'Classic green palette' },
-              { value: 'monochrome', label: 'Black & White', description: 'Clean monochrome theme' }
-            ]}
-            onChange={(value) => updateSetting('colorScheme', value as 'gameboy' | 'monochrome')}
-          />
+            Settings
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              fontSize: '24px',
+              color: '#0F380F',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Fun Tweaks Section */}
-        <div style={{ marginBottom: '24px' }}>
-          <h3 style={{
-            fontSize: '16px',
-            marginBottom: '12px',
-            color: 'var(--color-accent)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            borderBottom: '2px solid var(--color-text)',
-            paddingBottom: '4px'
+        {/* Settings Content */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px'
+        }}>
+          {/* Display Settings */}
+          <div style={{
+            background: '#8BAC0F',
+            border: '2px solid #0F380F',
+            padding: '16px'
           }}>
-            FUN TWEAKS
-          </h3>
-          
-          <SettingToggle
-            label="Flicker Effect"
-            value={settings.flicker}
-            onChange={(value) => updateSetting('flicker', value)}
-            description="Add subtle screen flicker"
-          />
-          
-          <SettingToggle
-            label="Glitch Effect"
-            value={settings.glitchEffect}
-            onChange={(value) => updateSetting('glitchEffect', value)}
-            description="Random glitch effects"
-          />
-          
-          <SettingToggle
-            label="Retro Mode"
-            value={settings.retroMode}
-            onChange={(value) => updateSetting('retroMode', value)}
-            description="Ultra-authentic retro experience"
-          />
+            <h3 style={{
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#0F380F',
+              margin: '0 0 16px 0',
+              textTransform: 'uppercase'
+            }}>
+              Display
+            </h3>
+            
+            {/* CRT Effect Toggle */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#0F380F'
+              }}>
+                CRT Screen Effect
+              </label>
+              <button
+                onClick={() => handleSettingChange('crtEffect', !settings.crtEffect)}
+                style={{
+                  background: settings.crtEffect ? '#0F380F' : '#9BBB0F',
+                  color: settings.crtEffect ? '#9BBB0F' : '#0F380F',
+                  border: '2px solid #0F380F',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {settings.crtEffect ? 'ON' : 'OFF'}
+              </button>
+            </div>
+
+            {/* Black/White Mode */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#0F380F'
+              }}>
+                Black & White Mode
+              </label>
+              <button
+                onClick={() => handleSettingChange('blackWhiteMode', !settings.blackWhiteMode)}
+                style={{
+                  background: settings.blackWhiteMode ? '#0F380F' : '#9BBB0F',
+                  color: settings.blackWhiteMode ? '#9BBB0F' : '#0F380F',
+                  border: '2px solid #0F380F',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {settings.blackWhiteMode ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          </div>
+
+          {/* Gameplay Settings */}
+          <div style={{
+            background: '#8BAC0F',
+            border: '2px solid #0F380F',
+            padding: '16px'
+          }}>
+            <h3 style={{
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#0F380F',
+              margin: '0 0 16px 0',
+              textTransform: 'uppercase'
+            }}>
+              Gameplay
+            </h3>
+            
+            {/* Animations Toggle */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#0F380F'
+              }}>
+                Animations
+              </label>
+              <button
+                onClick={() => handleSettingChange('animations', !settings.animations)}
+                style={{
+                  background: settings.animations ? '#0F380F' : '#9BBB0F',
+                  color: settings.animations ? '#9BBB0F' : '#0F380F',
+                  border: '2px solid #0F380F',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {settings.animations ? 'ON' : 'OFF'}
+              </button>
+            </div>
+
+            {/* Difficulty Selector */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#0F380F'
+              }}>
+                Default Difficulty
+              </label>
+              <select
+                value={settings.difficulty}
+                onChange={(e) => handleSettingChange('difficulty', e.target.value)}
+                style={{
+                  background: '#9BBB0F',
+                  color: '#0F380F',
+                  border: '2px solid #0F380F',
+                  padding: '6px 8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                }}
+              >
+                <option value="apprentice">Apprentice</option>
+                <option value="scholar">Scholar</option>
+                <option value="expert">Expert</option>
+                <option value="master">Master</option>
+                <option value="grandmaster">Grandmaster</option>
+              </select>
+            </div>
+
+            {/* Auto-Save Toggle */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#0F380F'
+              }}>
+                Auto-Save Progress
+              </label>
+              <button
+                onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
+                style={{
+                  background: settings.autoSave ? '#0F380F' : '#9BBB0F',
+                  color: settings.autoSave ? '#9BBB0F' : '#0F380F',
+                  border: '2px solid #0F380F',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {settings.autoSave ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          </div>
+
+          {/* Audio Settings */}
+          <div style={{
+            background: '#8BAC0F',
+            border: '2px solid #0F380F',
+            padding: '16px'
+          }}>
+            <h3 style={{
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#0F380F',
+              margin: '0 0 16px 0',
+              textTransform: 'uppercase'
+            }}>
+              Audio
+            </h3>
+            
+            {/* Sound Effects */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#0F380F'
+              }}>
+                Sound Effects
+              </label>
+              <button
+                onClick={() => handleSettingChange('soundEffects', !settings.soundEffects)}
+                style={{
+                  background: settings.soundEffects ? '#0F380F' : '#9BBB0F',
+                  color: settings.soundEffects ? '#9BBB0F' : '#0F380F',
+                  border: '2px solid #0F380F',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {settings.soundEffects ? 'ON' : 'OFF'}
+              </button>
+            </div>
+
+            {/* Background Music */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#0F380F'
+              }}>
+                Background Music
+              </label>
+              <button
+                onClick={() => handleSettingChange('backgroundMusic', !settings.backgroundMusic)}
+                style={{
+                  background: settings.backgroundMusic ? '#0F380F' : '#9BBB0F',
+                  color: settings.backgroundMusic ? '#9BBB0F' : '#0F380F',
+                  border: '2px solid #0F380F',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {settings.backgroundMusic ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          </div>
+
+          {/* Fun Tweaks */}
+          <div style={{
+            background: '#8BAC0F',
+            border: '2px solid #0F380F',
+            padding: '16px'
+          }}>
+            <h3 style={{
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#0F380F',
+              margin: '0 0 16px 0',
+              textTransform: 'uppercase'
+            }}>
+              Fun Tweaks
+            </h3>
+            
+            {/* Retro Mode */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#0F380F'
+              }}>
+                Retro Pixel Mode
+              </label>
+              <button
+                onClick={() => handleSettingChange('retroMode', !settings.retroMode)}
+                style={{
+                  background: settings.retroMode ? '#0F380F' : '#9BBB0F',
+                  color: settings.retroMode ? '#9BBB0F' : '#0F380F',
+                  border: '2px solid #0F380F',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {settings.retroMode ? 'ON' : 'OFF'}
+              </button>
+            </div>
+
+            {/* Screen Shake */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#0F380F'
+              }}>
+                Screen Shake Effects
+              </label>
+              <button
+                onClick={() => handleSettingChange('screenShake', !settings.screenShake)}
+                style={{
+                  background: settings.screenShake ? '#0F380F' : '#9BBB0F',
+                  color: settings.screenShake ? '#9BBB0F' : '#0F380F',
+                  border: '2px solid #0F380F',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                {settings.screenShake ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Gameplay Settings Section */}
-        <div style={{ marginBottom: '24px' }}>
-          <h3 style={{
-            fontSize: '16px',
-            marginBottom: '12px',
-            color: 'var(--color-accent)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            borderBottom: '2px solid var(--color-text)',
-            paddingBottom: '4px'
-          }}>
-            GAMEPLAY SETTINGS
-          </h3>
-          
-          <SettingSelect
-            label="Default Difficulty"
-            value={settings.difficulty}
-            options={[
-              { value: 'apprentice', label: 'Apprentice (1x multiplier)' },
-              { value: 'scholar', label: 'Scholar (1.3x multiplier)' },
-              { value: 'expert', label: 'Expert (1.6x multiplier)' },
-              { value: 'master', label: 'Master (2.0x multiplier)' },
-              { value: 'grandmaster', label: 'Grandmaster (2.5x multiplier)' }
-            ]}
-            onChange={(value) => updateSetting('difficulty', value as any)}
-          />
-        </div>
-
-        {/* Audio Settings Section */}
-        <div style={{ marginBottom: '24px' }}>
-          <h3 style={{
-            fontSize: '16px',
-            marginBottom: '12px',
-            color: 'var(--color-accent)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            borderBottom: '2px solid var(--color-text)',
-            paddingBottom: '4px'
-          }}>
-            AUDIO SETTINGS
-          </h3>
-          
-          <SettingToggle
-            label="Sound Effects"
-            value={settings.soundEnabled}
-            onChange={(value) => updateSetting('soundEnabled', value)}
-            description="Enable game sound effects"
-          />
-          
-          <SettingToggle
-            label="Background Music"
-            value={settings.musicEnabled}
-            onChange={(value) => updateSetting('musicEnabled', value)}
-            description="Enable background music"
-          />
-        </div>
-
-        {/* Accessibility Section */}
-        <div style={{ marginBottom: '24px' }}>
-          <h3 style={{
-            fontSize: '16px',
-            marginBottom: '12px',
-            color: 'var(--color-accent)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            borderBottom: '2px solid var(--color-text)',
-            paddingBottom: '4px'
-          }}>
-            ACCESSIBILITY
-          </h3>
-          
-          <SettingToggle
-            label="High Contrast"
-            value={settings.highContrast}
-            onChange={(value) => updateSetting('highContrast', value)}
-            description="Enhanced contrast for better visibility"
-          />
-          
-          <SettingToggle
-            label="Large Text"
-            value={settings.largeText}
-            onChange={(value) => updateSetting('largeText', value)}
-            description="Increase text size by 20%"
-          />
-          
-          <SettingToggle
-            label="Reduced Motion"
-            value={settings.reducedMotion}
-            onChange={(value) => updateSetting('reducedMotion', value)}
-            description="Disable animations for motion sensitivity"
-          />
-        </div>
-
-        {/* Action Buttons */}
+        {/* Footer Buttons */}
         <div style={{
           display: 'flex',
           gap: '12px',
-          marginTop: '20px'
+          justifyContent: 'center',
+          marginTop: '24px',
+          borderTop: '2px solid #0F380F',
+          paddingTop: '16px'
         }}>
           <button
-            onClick={resetSettings}
+            onClick={() => {
+              // Reset to defaults
+              updateSettings({
+                crtEffect: true,
+                blackWhiteMode: false,
+                animations: true,
+                difficulty: 'apprentice',
+                autoSave: true,
+                soundEffects: true,
+                backgroundMusic: false,
+                retroMode: false,
+                screenShake: true
+              });
+            }}
             className="gb-button"
             style={{
-              flex: 1,
-              padding: '12px',
+              background: '#8BAC0F',
+              color: '#0F380F',
+              border: '2px solid #0F380F',
+              padding: '12px 16px',
               fontSize: '14px',
-              background: 'var(--color-accent)',
-              color: 'var(--color-bg)',
-              border: '3px solid var(--color-text)',
-              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
               fontWeight: 'bold',
-              textTransform: 'uppercase',
               cursor: 'pointer'
             }}
           >
-            [R] RESET
+            Reset Defaults
           </button>
           
           <button
             onClick={onClose}
             className="gb-button"
             style={{
-              flex: 1,
-              padding: '12px',
+              background: '#0F380F',
+              color: '#9BBB0F',
+              border: '2px solid #0F380F',
+              padding: '12px 16px',
               fontSize: '14px',
-              background: 'var(--color-accent)',
-              color: 'var(--color-bg)',
-              border: '3px solid var(--color-text)',
-              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
               fontWeight: 'bold',
-              textTransform: 'uppercase',
               cursor: 'pointer'
             }}
           >
-            [B] BACK
+            Close
           </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default SettingsMenu; 
+} 
