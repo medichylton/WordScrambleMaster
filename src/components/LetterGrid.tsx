@@ -168,31 +168,31 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
     const isGolden = isGoldenLetter(row, col);
     const isVowelWithPower = hasVowelPower && isVowel(letter);
     
-    // Flat Game Boy styling - no gradients or shadows
-    let background = 'var(--color-bg)';
-    let color = 'var(--color-text)';
-    let border = '3px solid var(--color-text)';
+    // Game Boy styling - consistent colors
+    let background = '#9BBB0F'; // Light green background
+    let color = '#0F380F'; // Dark green text
+    let border = '3px solid #0F380F'; // Dark green border
     
     if (isSelected) {
-      background = 'var(--color-text)';
-      color = 'var(--color-bg)';
-      border = '3px solid var(--color-text)';
+      background = '#0F380F'; // Dark green background when selected
+      color = '#9BBB0F'; // Light green text when selected
+      border = '3px solid #0F380F';
     } else if (isInPath) {
-      background = 'var(--color-accent)';
-      color = 'var(--color-bg)';
-      border = '3px solid var(--color-text)';
+      background = '#8BAC0F'; // Medium green for path
+      color = '#0F380F';
+      border = '3px solid #0F380F';
     } else if (isGolden || isVowelWithPower) {
-      // Special letters get accent background
-      background = 'var(--color-accent)';
-      color = 'var(--color-text)';
-      border = '4px solid var(--color-text)'; // Thicker border for special letters
+      // Special letters get slightly different styling
+      background = '#8BAC0F'; // Medium green
+      color = '#0F380F';
+      border = '4px solid #0F380F'; // Thicker border for special letters
     }
     
     return {
       background,
       color,
       border,
-      fontWeight: (isGolden || isVowelWithPower) ? 'bold' : 'normal'
+      fontWeight: (isGolden || isVowelWithPower) ? 'bold' : 'bold' // All letters bold
     };
   };
 
@@ -451,28 +451,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
       alignItems: 'center',
       gap: '20px'
     }}>
-      {!hideWordDisplay && (
-        <div style={{
-          fontSize: '24px',
-          fontWeight: 'bold',
-          fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-          textTransform: 'uppercase',
-          minHeight: '24px',
-          textAlign: 'center',
-          padding: '12px 20px',
-          background: 'var(--color-accent)',
-          color: 'var(--color-bg)',
-          border: '3px solid var(--color-text)'
-        }}>
-          {currentWord || 'SELECT LETTERS'}
-          {wordValidationStatus === 'checking' && (
-            <span style={{ marginLeft: '8px', fontSize: '16px' }}>[?]</span>
-          )}
-          {selectedPath.length > 0 && !isValidPath(grid, selectedPath) && (
-            <span style={{ marginLeft: '8px', fontSize: '16px' }}>[X]</span>
-          )}
-        </div>
-      )}
+      {/* Remove the word display completely - it's handled in GameView now */}
       
       <div 
         style={{
@@ -480,8 +459,8 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
           gridTemplateColumns: 'repeat(4, 1fr)',
           gap: '12px',
           padding: '24px',
-          background: 'var(--color-bg)',
-          border: '4px solid var(--color-text)',
+          background: '#9BBB0F', // Light green background
+          border: '4px solid #0F380F', // Dark green border
           borderRadius: '0',
           position: 'relative',
           touchAction: 'none',
@@ -498,7 +477,6 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
             const isInPath = isCellInPath(rowIndex, colIndex);
             const selectionOrder = getCellSelectionOrder(rowIndex, colIndex);
             const letterStyle = getLetterStyle(rowIndex, colIndex, letter);
-            const isSelectable = isSelecting && selectedPath.length > 0 && areAdjacent(selectedPath[selectedPath.length - 1], { row: rowIndex, col: colIndex });
             
             return (
               <div
@@ -535,15 +513,15 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
                     right: '4px',
                     fontSize: '14px',
                     fontWeight: 'bold',
-                    color: 'var(--color-bg)',
-                    background: 'var(--color-text)',
+                    color: '#9BBB0F', // Light green text
+                    background: '#0F380F', // Dark green background
                     borderRadius: '50%',
                     width: '20px',
                     height: '20px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '2px solid var(--color-bg)'
+                    border: '2px solid #9BBB0F' // Light green border
                   }}>
                     {selectionOrder}
                   </div>
@@ -554,100 +532,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
         )}
       </div>
 
-      {/* Dead zone around grid to prevent accidental touches */}
-      <div style={{
-        position: 'absolute',
-        top: '-20px',
-        left: '-20px',
-        right: '-20px',
-        bottom: '-20px',
-        pointerEvents: 'none',
-        zIndex: -1
-      }} />
-
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        justifyContent: 'center',
-        marginTop: '20px'
-      }}>
-        <button 
-          onClick={submitWord} 
-          className="gb-button"
-          disabled={currentWord.length < 2 || allFoundWords.includes(currentWord) || wordValidationStatus === 'invalid' || (selectedPath.length > 0 && !isValidPath(grid, selectedPath))}
-          style={{
-            fontSize: '16px',
-            padding: '12px 20px',
-            background: (currentWord.length >= 2 && !allFoundWords.includes(currentWord) && wordValidationStatus !== 'invalid') ? 'var(--color-text)' : 'var(--color-accent)',
-            color: (currentWord.length >= 2 && !allFoundWords.includes(currentWord) && wordValidationStatus !== 'invalid') ? 'var(--color-bg)' : 'var(--color-text)',
-            border: '3px solid var(--color-text)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            opacity: (currentWord.length >= 2 && !allFoundWords.includes(currentWord) && wordValidationStatus !== 'invalid') ? 1 : 0.5
-          }}
-        >
-          SUBMIT
-        </button>
-        <button 
-          onClick={clearSelection} 
-          className="gb-button"
-          style={{
-            fontSize: '16px',
-            padding: '12px 20px',
-            background: 'var(--color-bg)',
-            color: 'var(--color-text)',
-            border: '3px solid var(--color-text)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            cursor: 'pointer'
-          }}
-        >
-          CLEAR
-        </button>
-        <button 
-          onClick={shuffleGrid} 
-          className="gb-button"
-          style={{
-            fontSize: '16px',
-            padding: '12px 20px',
-            background: 'var(--color-bg)',
-            color: 'var(--color-text)',
-            border: '3px solid var(--color-text)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            cursor: 'pointer'
-          }}
-        >
-          SHUFFLE
-        </button>
-      </div>
-
-      {/* Move History Debug (can be removed in production) */}
-      {process.env.NODE_ENV === 'development' && moveHistory.length > 0 && (
-        <div style={{ 
-          position: 'fixed', 
-          top: '10px', 
-          right: '10px', 
-          background: 'rgba(0,0,0,0.8)', 
-          color: 'white', 
-          padding: '10px', 
-          fontSize: '10px',
-          maxWidth: '200px',
-          maxHeight: '200px',
-          overflow: 'auto'
-        }}>
-          <strong>Move History:</strong>
-          {moveHistory.slice(-5).map((move, i) => (
-            <div key={i}>
-              {move.word} - {move.score}pts
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Remove all buttons and extra UI elements - keep it clean like the screenshot */}
     </div>
   );
 } 
