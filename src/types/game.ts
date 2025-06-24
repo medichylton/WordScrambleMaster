@@ -7,6 +7,7 @@ export interface GameState {
   
   // Persistent Inventory
   inventory: InventoryItem[];
+  activePerks: PerkEffect[];
   coins: number;
   totalScore: number;
   lifetimeCoins: number;
@@ -256,6 +257,7 @@ export type GameAction =
   | { type: 'SELECT_CHALLENGE'; payload: { challenge: Challenge } | Challenge }
   | { type: 'SUBMIT_WORD'; payload: { word: string; positions: number[]; timeTaken: number } }
   | { type: 'SKIP_CHALLENGE'; payload: { challenge: Challenge } }
+  | { type: 'SKIP_LEVEL'; payload: { level: number; perk: PerkEffect } }
   | { type: 'PURCHASE_ITEM'; payload: { item: ShopItem } }
   | { type: 'PURCHASE_INVENTORY_ITEM'; payload: { item: InventoryItem } }
   | { type: 'SELL_INVENTORY_ITEM'; payload: { itemId: string } }
@@ -273,4 +275,70 @@ export type GameAction =
   | { type: 'SET_DIFFICULTY'; payload: DifficultyStake };
 
 // Helper type for power-ups (union of all power-up types)
-export type PowerUp = LetterEnhancer | WordMultiplier | ConsumableBoost; 
+export type PowerUp = LetterEnhancer | WordMultiplier | ConsumableBoost;
+
+export interface PerkEffect {
+  id: string;
+  name: string;
+  description: string;
+  effect: PerkEffectType;
+  levelAcquired: number;
+}
+
+export type PerkEffectType = 
+  | { type: 'timeBonus'; seconds: number }
+  | { type: 'vowelBonus'; multiplier: number }
+  | { type: 'unlockDiagonal'; enabled: boolean }
+  | { type: 'scoreMultiplier'; value: number }
+  | { type: 'coinMultiplier'; value: number }
+  | { type: 'wordLengthBonus'; minLength: number; bonus: number }
+  | { type: 'letterTransform'; enabled: boolean }
+  | { type: 'vowelTheft'; chance: number }
+  | { type: 'consonantMultiplier'; value: number }
+  | { type: 'goldenVowels'; enabled: boolean }
+  | { type: 'lengthBonus'; value: number }
+  | { type: 'shortWordMultiplier'; value: number }
+  | { type: 'longWordMultiplier'; value: number }
+  | { type: 'perfectLength'; value: number }
+  | { type: 'speedBonus'; multiplier: number }
+  | { type: 'timeToCoins'; ratio: number }
+  | { type: 'timeFreeze'; enabled: boolean }
+  | { type: 'palindromeMultiplier'; value: number }
+  | { type: 'anagramMultiplier'; value: number }
+  | { type: 'rhymeMultiplier'; value: number }
+  | { type: 'alliterationMultiplier'; value: number }
+  | { type: 'diagonalBonus'; value: number }
+  | { type: 'pathBonus'; enabled: boolean }
+  | { type: 'gridBonus'; value: number }
+  | { type: 'spiralBonus'; value: number }
+  | { type: 'chainBonus'; value: number }
+  | { type: 'comboMultiplier'; enabled: boolean }
+  | { type: 'streakBonus'; enabled: boolean }
+  | { type: 'nounMultiplier'; value: number }
+  | { type: 'verbMultiplier'; value: number }
+  | { type: 'adjectiveMultiplier'; value: number }
+  | { type: 'pluralMultiplier'; value: number }
+  | { type: 'wordEcho'; chance: number }
+  | { type: 'letterGod'; enabled: boolean }
+  | { type: 'infiniteLoop'; enabled: boolean }
+  | { type: 'ruleBreaker'; enabled: boolean }
+  | { type: 'coinPerWord'; value: number }
+  | { type: 'wordToCoins'; ratio: number }
+  | { type: 'coinGrowth'; enabled: boolean }
+  | { type: 'luckyCoins'; chance: number }
+  | { type: 'synergyMultiplier'; enabled: boolean }
+  | { type: 'jokerMultiplier'; enabled: boolean }
+  | { type: 'pairBonus'; value: number }
+  | { type: 'trinityBonus'; value: number }
+  | { type: 'riskReward'; enabled: boolean }
+  | { type: 'speedReward'; enabled: boolean }
+  | { type: 'perfectionBonus'; value: number }
+  | { type: 'underdogBonus'; enabled: boolean }
+  | { type: 'wildCard'; enabled: boolean }
+  | { type: 'jokerWild'; enabled: boolean }
+  | { type: 'chaosEffects'; enabled: boolean }
+  | { type: 'quantumLeap'; enabled: boolean }
+  | { type: 'metaJoker'; enabled: boolean }
+  | { type: 'jokerJoker'; enabled: boolean }
+  | { type: 'infiniteJoker'; enabled: boolean }
+  | { type: 'jokerGod'; enabled: boolean }; 

@@ -27,6 +27,9 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
   const [moveHistory, setMoveHistory] = useState<{word: string, path: Position[], score: number, timestamp: number}[]>([]);
   const [chainCount, setChainCount] = useState(0);
   const [goldenLetters, setGoldenLetters] = useState<Set<string>>(new Set());
+  const [touchStartTime, setTouchStartTime] = useState(0);
+  const [lastTouchPosition, setLastTouchPosition] = useState<Position | null>(null);
+  const [touchThreshold, setTouchThreshold] = useState(50); // Minimum distance for touch movement
 
   // Use foundWords prop if provided, otherwise use local state
   const allFoundWords = foundWords.length > 0 ? foundWords : localFoundWords;
@@ -183,6 +186,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
     };
   };
 
+  // Improved cell detection with better accuracy
   const getCellFromPoint = (clientX: number, clientY: number): Position | null => {
     const element = document.elementFromPoint(clientX, clientY);
     if (element && element.hasAttribute('data-row') && element.hasAttribute('data-col')) {
@@ -193,11 +197,25 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
     return null;
   };
 
+  // Calculate distance between two positions
+  const getDistance = (pos1: Position, pos2: Position): number => {
+    return Math.sqrt(Math.pow(pos1.row - pos2.row, 2) + Math.pow(pos1.col - pos2.col, 2));
+  };
+
+  // Check if a touch movement is significant enough to register
+  const isSignificantMovement = (startPos: Position, currentPos: Position): boolean => {
+    return getDistance(startPos, currentPos) >= 0.5; // Minimum 0.5 cell distance
+  };
+
+  // Improved touch handling with smart barriers
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
+    
     if (cell) {
+      setTouchStartTime(Date.now());
+      setLastTouchPosition(cell);
       setIsSelecting(true);
       setSelectedPath([cell]);
       
@@ -210,11 +228,16 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
 
   const handleTouchMove = (e: React.TouchEvent) => {
     e.preventDefault();
-    if (!isSelecting) return;
+    if (!isSelecting || !lastTouchPosition) return;
     
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (!cell) return;
+
+    // Check if movement is significant enough
+    if (!isSignificantMovement(lastTouchPosition, cell)) {
+      return;
+    }
 
     const existingIndex = selectedPath.findIndex(pos => pos.row === cell.row && pos.col === cell.col);
     
@@ -226,6 +249,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
       // Use enhanced adjacency checking
       if (areAdjacent(lastPos, cell)) {
         setSelectedPath([...selectedPath, cell]);
+        setLastTouchPosition(cell);
         
         // Light haptic feedback for each new letter
         if (navigator.vibrate) {
@@ -239,7 +263,18 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
     e.preventDefault();
     if (!isSelecting) return;
     
+    // Check if this was a quick tap (potential accidental touch)
+    const touchDuration = Date.now() - touchStartTime;
+    if (touchDuration < 100 && selectedPath.length === 1) {
+      // Quick single tap - might be accidental, don't submit
+      setIsSelecting(false);
+      setSelectedPath([]);
+      setLastTouchPosition(null);
+      return;
+    }
+    
     setIsSelecting(false);
+    setLastTouchPosition(null);
     await processWordSubmission();
     setSelectedPath([]);
   };
@@ -247,12 +282,19 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
   const handleMouseDown = (row: number, col: number) => {
     setIsSelecting(true);
     setSelectedPath([{ row, col }]);
+    setLastTouchPosition({ row, col });
   };
 
   const handleMouseEnter = (row: number, col: number) => {
-    if (!isSelecting) return;
+    if (!isSelecting || !lastTouchPosition) return;
     
     const cell = { row, col };
+    
+    // Check if movement is significant enough
+    if (!isSignificantMovement(lastTouchPosition, cell)) {
+      return;
+    }
+    
     const existingIndex = selectedPath.findIndex(pos => pos.row === row && pos.col === col);
     
     if (existingIndex !== -1) {
@@ -263,6 +305,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
       // Use enhanced adjacency checking
       if (areAdjacent(lastPos, cell)) {
         setSelectedPath([...selectedPath, cell]);
+        setLastTouchPosition(cell);
       }
     }
   };
@@ -271,6 +314,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
     if (!isSelecting) return;
     
     setIsSelecting(false);
+    setLastTouchPosition(null);
     await processWordSubmission();
     setSelectedPath([]);
   };
@@ -422,10 +466,14 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '8px',
-          padding: '20px',
+          gap: '12px',
+          padding: '24px',
           background: 'var(--color-bg)',
-          border: '4px solid var(--color-text)'
+          border: '4px solid var(--color-text)',
+          borderRadius: '0',
+          position: 'relative',
+          touchAction: 'none',
+          userSelect: 'none'
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -438,6 +486,7 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
             const isInPath = isCellInPath(rowIndex, colIndex);
             const selectionOrder = getCellSelectionOrder(rowIndex, colIndex);
             const letterStyle = getLetterStyle(rowIndex, colIndex, letter);
+            const isSelectable = isSelecting && selectedPath.length > 0 && areAdjacent(selectedPath[selectedPath.length - 1], { row: rowIndex, col: colIndex });
             
             return (
               <div
@@ -446,38 +495,43 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
                 data-col={colIndex}
                 style={{
                   ...letterStyle,
-                  width: '70px',
-                  height: '70px',
+                  width: '80px',
+                  height: '80px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '32px',
+                  fontSize: '36px',
                   fontWeight: 'bold',
                   fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
                   cursor: 'pointer',
                   userSelect: 'none',
                   textTransform: 'uppercase',
-                  position: 'relative'
+                  position: 'relative',
                 }}
                 onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  handleMouseDown(rowIndex, colIndex);
+                }}
               >
                 {letter}
                 {selectionOrder > 0 && (
                   <div style={{
                     position: 'absolute',
-                    top: '2px',
-                    right: '2px',
-                    fontSize: '12px',
+                    top: '4px',
+                    right: '4px',
+                    fontSize: '14px',
                     fontWeight: 'bold',
                     color: 'var(--color-bg)',
                     background: 'var(--color-text)',
                     borderRadius: '50%',
-                    width: '16px',
-                    height: '16px',
+                    width: '20px',
+                    height: '20px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    border: '2px solid var(--color-bg)'
                   }}>
                     {selectionOrder}
                   </div>
@@ -487,6 +541,17 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
           })
         )}
       </div>
+
+      {/* Dead zone around grid to prevent accidental touches */}
+      <div style={{
+        position: 'absolute',
+        top: '-20px',
+        left: '-20px',
+        right: '-20px',
+        bottom: '-20px',
+        pointerEvents: 'none',
+        zIndex: -1
+      }} />
 
       <div style={{
         display: 'flex',

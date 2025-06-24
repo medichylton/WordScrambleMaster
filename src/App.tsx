@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { GameProvider } from './contexts/GameContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import MainMenu from './components/MainMenu';
 import { GameView } from './components/GameView';
 import { useGame } from './hooks/useGame';
@@ -78,9 +79,11 @@ function AppContent() {
 function App() {
   return (
     <div className="crt-screen">
-      <GameProvider>
-        <AppContent />
-      </GameProvider>
+      <SettingsProvider>
+        <GameProvider>
+          <AppContent />
+        </GameProvider>
+      </SettingsProvider>
     </div>
   );
 }

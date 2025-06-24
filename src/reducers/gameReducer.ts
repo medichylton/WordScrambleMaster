@@ -357,6 +357,31 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Handle consumable usage logic here
       return state;
 
+    case 'SKIP_LEVEL':
+      const { level, perk } = action.payload;
+      const nextLevelAfterSkip = level + 1;
+      
+      if (nextLevelAfterSkip > state.maxLevel) {
+        // Run completed!
+        const runCompleteState = {
+          ...state,
+          gamePhase: 'runComplete' as const
+        };
+        localStorage.setItem('wordScrambleGameState', JSON.stringify(runCompleteState));
+        return runCompleteState;
+      } else {
+        // Apply perk and advance to next level
+        const skipState = {
+          ...state,
+          currentLevel: nextLevelAfterSkip,
+          // Apply perk effect
+          activePerks: [...(state.activePerks || []), perk],
+          gamePhase: 'shopping' as const
+        };
+        localStorage.setItem('wordScrambleGameState', JSON.stringify(skipState));
+        return skipState;
+      }
+
     default:
       return state;
   }

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useGame } from '../hooks/useGame';
+import { useSettings } from '../contexts/SettingsContext';
 import { DifficultyStake } from '../types/game';
+import SettingsMenu from './SettingsMenu';
 
 const MainMenu: React.FC = () => {
   const { dispatch } = useGame();
+  const { settings } = useSettings();
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   
@@ -11,7 +14,7 @@ const MainMenu: React.FC = () => {
   const hasSavedGame = localStorage.getItem('wordScrambleGameState') !== null;
   
   const handleStartGame = (stake: DifficultyStake) => {
-    dispatch({ type: 'START_GAME', payload: { stake } });
+    dispatch({ type: 'START_NEW_RUN', payload: { stake } });
   };
   
   const continueGame = () => {
@@ -23,35 +26,35 @@ const MainMenu: React.FC = () => {
         dispatch({ type: 'LOAD_GAME', payload: parsedState });
       } catch (error) {
         console.error('Failed to load saved game:', error);
-        handleStartGame('Quick Blitz');
+        handleStartGame('apprentice');
       }
     } else {
-      handleStartGame('Quick Blitz');
+      handleStartGame('apprentice');
     }
   };
 
   // Authentic Game Boy difficulty patterns - using ASCII symbols
   const difficulties = [
     {
-      stake: 'Quick Blitz' as DifficultyStake,
+      stake: 'apprentice' as DifficultyStake,
       symbol: '>>',
-      description: 'Fast-paced • 30 points • 2 minutes',
-      color: 'var(--gb-light)',
-      glow: 'var(--gb-light)'
+      description: 'Beginner • 1x multiplier • 15 levels',
+      color: 'var(--color-text)',
+      glow: 'var(--color-text)'
     },
     {
-      stake: 'Word Master' as DifficultyStake,
+      stake: 'scholar' as DifficultyStake,
       symbol: '**',
-      description: 'Balanced • 50 points • 3 minutes',
-      color: 'var(--gb-lightest)',
-      glow: 'var(--gb-lightest)'
+      description: 'Intermediate • 1.3x multiplier • 15 levels',
+      color: 'var(--color-text)',
+      glow: 'var(--color-text)'
     },
     {
-      stake: 'Ultimate Test' as DifficultyStake,
+      stake: 'expert' as DifficultyStake,
       symbol: '##',
-      description: 'Challenge • 75 points • 4 minutes',
-      color: 'var(--gb-light)',
-      glow: 'var(--gb-lightest)'
+      description: 'Advanced • 1.6x multiplier • 15 levels',
+      color: 'var(--color-text)',
+      glow: 'var(--color-text)'
     }
   ];
 
@@ -155,7 +158,7 @@ const MainMenu: React.FC = () => {
 
         <button
           className="gb-button"
-          onClick={() => handleStartGame('Quick Blitz')}
+          onClick={() => handleStartGame('apprentice')}
           style={{
             width: '100%',
             fontSize: '20px', /* Much larger */
@@ -170,12 +173,12 @@ const MainMenu: React.FC = () => {
             cursor: 'pointer'
           }}
         >
-          &gt;&gt; QUICK BLITZ - 30 PTS
+          &gt;&gt; APPRENTICE - BEGINNER
         </button>
 
         <button
           className="gb-button"
-          onClick={() => handleStartGame('Word Master')}
+          onClick={() => handleStartGame('scholar')}
           style={{
             width: '100%',
             fontSize: '20px', /* Much larger */
@@ -190,12 +193,12 @@ const MainMenu: React.FC = () => {
             cursor: 'pointer'
           }}
         >
-          ** WORD MASTER - 50 PTS
+          ** SCHOLAR - INTERMEDIATE
         </button>
 
         <button
           className="gb-button"
-          onClick={() => handleStartGame('Ultimate Test')}
+          onClick={() => handleStartGame('expert')}
           style={{
             width: '100%',
             fontSize: '20px', /* Much larger */
@@ -210,7 +213,7 @@ const MainMenu: React.FC = () => {
             cursor: 'pointer'
           }}
         >
-          ## ULTIMATE TEST - 75 PTS
+          ## EXPERT - ADVANCED
         </button>
       </div>
 
@@ -248,40 +251,54 @@ const MainMenu: React.FC = () => {
         </div>
       </div>
 
-      {/* Authentic Game Boy Menu Options */}
+      {/* Menu Options - Stacked Vertically */}
       <div style={{
         position: 'absolute',
-        bottom: '32px',
+        bottom: '80px',
         left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex',
-        gap: '16px',
-        zIndex: 5
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px',
+        zIndex: 5,
+        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 20px)`
       }}>
-        <button
-          onClick={() => setShowHowToPlay(true)}
-          className="gb-button"
-          style={{
-            padding: '6px 12px',
-            fontSize: 'clamp(8px, 2.2vw, 11px)',
-            background: 'var(--gb-light)',
-            color: 'var(--gb-darkest)'
-          }}
-        >
-          [?] HELP
-        </button>
-        
         <button
           onClick={() => setShowSettings(true)}
           className="gb-button"
           style={{
-            padding: '6px 12px',
-            fontSize: 'clamp(8px, 2.2vw, 11px)',
-            background: 'var(--gb-light)',
-            color: 'var(--gb-darkest)'
+            padding: '12px 20px',
+            fontSize: '16px',
+            background: 'var(--color-bg)',
+            color: 'var(--color-text)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            minWidth: '140px'
           }}
         >
           [*] SETTINGS
+        </button>
+        
+        <button
+          onClick={() => setShowHowToPlay(true)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--color-accent)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontSize: '14px',
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            padding: '4px 8px'
+          }}
+        >
+          [?] HOW TO PLAY
         </button>
       </div>
 
@@ -293,34 +310,39 @@ const MainMenu: React.FC = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(15, 56, 15, 0.9)',
+          background: 'rgba(0, 0, 0, 0.8)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000,
           padding: '20px'
         }}>
-          <div className="gb-container" style={{
+          <div style={{
             maxWidth: '400px',
             maxHeight: '80vh',
             overflow: 'auto',
-            background: 'var(--gb-screen-bg)',
+            background: 'var(--color-bg)',
+            border: '3px solid var(--color-text)',
             padding: '20px'
           }}>
-            <h2 className="gb-text" style={{
-              fontSize: 'clamp(12px, 4vw, 18px)',
+            <h2 style={{
+              fontSize: '18px',
               marginBottom: '16px',
               textAlign: 'center',
-              color: 'var(--gb-darkest)'
+              color: 'var(--color-text)',
+              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+              fontWeight: 'bold',
+              textTransform: 'uppercase'
             }}>
               [?] HOW TO PLAY
             </h2>
             
-            <div className="gb-text" style={{
-              fontSize: 'clamp(8px, 2.5vw, 12px)',
+            <div style={{
+              fontSize: '14px',
               lineHeight: '1.4',
               marginBottom: '16px',
-              color: 'var(--gb-darkest)'
+              color: 'var(--color-text)',
+              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
             }}>
               <div style={{ marginBottom: '12px' }}>
                 <strong>OBJECTIVE:</strong><br/>
@@ -354,10 +376,15 @@ const MainMenu: React.FC = () => {
               className="gb-button"
               style={{
                 width: '100%',
-                padding: '8px',
-                fontSize: 'clamp(9px, 2.8vw, 13px)',
-                background: 'var(--gb-dark)',
-                color: 'var(--gb-lightest)'
+                padding: '12px',
+                fontSize: '16px',
+                background: 'var(--color-accent)',
+                color: 'var(--color-bg)',
+                border: '3px solid var(--color-text)',
+                fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                cursor: 'pointer'
               }}
             >
               [B] BACK
@@ -366,65 +393,9 @@ const MainMenu: React.FC = () => {
         </div>
       )}
 
-      {/* Settings Modal - Authentic Game Boy Style */}
+      {/* Settings Menu */}
       {showSettings && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15, 56, 15, 0.9)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div className="gb-container" style={{
-            maxWidth: '350px',
-            background: 'var(--gb-screen-bg)',
-            padding: '20px'
-          }}>
-            <h2 className="gb-text" style={{
-              fontSize: 'clamp(12px, 4vw, 18px)',
-              marginBottom: '16px',
-              textAlign: 'center',
-              color: 'var(--gb-darkest)'
-            }}>
-              [*] SETTINGS
-            </h2>
-            
-            <div className="gb-text" style={{
-              fontSize: 'clamp(9px, 2.8vw, 13px)',
-              lineHeight: '1.4',
-              marginBottom: '16px',
-              color: 'var(--gb-darkest)',
-              textAlign: 'center'
-            }}>
-              Game Boy Edition v2.0<br/>
-              Authentic 8-bit Experience<br/>
-              <br/>
-              Sound: ON<br/>
-              Difficulty: Balanced<br/>
-              Screen: CRT Mode
-            </div>
-            
-            <button
-              onClick={() => setShowSettings(false)}
-              className="gb-button"
-              style={{
-                width: '100%',
-                padding: '8px',
-                fontSize: 'clamp(9px, 2.8vw, 13px)',
-                background: 'var(--gb-dark)',
-                color: 'var(--gb-lightest)'
-              }}
-            >
-              [B] BACK
-            </button>
-          </div>
-        </div>
+        <SettingsMenu onClose={() => setShowSettings(false)} />
       )}
     </div>
   );

@@ -11,6 +11,7 @@ const initialGameState: GameState = {
   
   // Persistent Inventory
   inventory: [],
+  activePerks: [],
   coins: 15,
   totalScore: 0,
   lifetimeCoins: 0,

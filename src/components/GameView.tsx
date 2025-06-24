@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../hooks/useGame';
+import { GameState, Challenge, PerkEffect, PerkEffectType, InventoryItem, Rarity } from '../types/game';
 import { LetterGrid } from './LetterGrid';
+import MainMenu from './MainMenu';
+import { generateRandomPowerCard, getPerkEmoji, convertPerkEffectToItemEffect } from '../utils/gameUtils';
+import { applyPowerCardEffects, PowerCardContext } from '../utils/powerCardEffects';
 
 export function GameView() {
   const { gameState, resetGame, selectChallenge, dispatch } = useGame();
@@ -18,55 +22,143 @@ export function GameView() {
 }
 
 function ChallengeSelection() {
-  const { selectChallenge, gameState } = useGame();
+  const { selectChallenge, gameState, dispatch } = useGame();
   const [selectedType, setSelectedType] = useState<string>('');
+  const [expandedLevel, setExpandedLevel] = useState<number | null>(null);
   
-      // Calculate target scores based on current level progression
-    const calculateTargetScore = (baseScore: number) => {
-      const level = gameState.currentLevel;
-      const difficultyMultiplier = {
-        'apprentice': 1,
-        'scholar': 1.3,
-        'expert': 1.6,
-        'master': 2.0,
-        'grandmaster': 2.5
-      }[gameState.difficulty] || 1;
-      
-      return Math.floor(baseScore * Math.pow(1.15, level - 1) * difficultyMultiplier);
-    };
+  // Calculate target scores based on current level progression
+  const calculateTargetScore = (baseScore: number) => {
+    const level = gameState.currentLevel;
+    const difficultyMultiplier = {
+      'apprentice': 1,
+      'scholar': 1.3,
+      'expert': 1.6,
+      'master': 2.0,
+      'grandmaster': 2.5
+    }[gameState.difficulty] || 1;
+    
+    return Math.floor(baseScore * Math.pow(1.15, level - 1) * difficultyMultiplier);
+  };
 
-    const challengeTypes = [
-    {
-      type: 'quick',
-      name: 'QUICK BLITZ',
-      description: 'Fast-paced word hunting',
-      icon: '>>',
-      targetScore: calculateTargetScore(30),
-      timeLimit: 90,
-      coinReward: Math.floor(15 + (gameState.currentLevel * 2)),
-      color: 'var(--color-text)'
-    },
-    {
+  // Generate current level challenge (only this one is playable)
+  const generateCurrentLevelChallenge = () => {
+    const level = gameState.currentLevel;
+    const baseScore = 30 + (level * 5);
+    
+    return {
       type: 'standard',
-      name: 'WORD MASTER',
-      description: 'Balanced challenge',
-      icon: '**',
-      targetScore: calculateTargetScore(40),
+      name: 'WORD HUNT',
+      description: 'Find words in the grid',
+      icon: '>>',
+      targetScore: calculateTargetScore(baseScore),
       timeLimit: 120,
-      coinReward: Math.floor(20 + (gameState.currentLevel * 3)),
-      color: 'var(--color-text)'
-    },
-    {
-      type: 'boss',
-      name: 'ULTIMATE TEST',
-      description: 'Maximum difficulty',
-      icon: '##',
-      targetScore: calculateTargetScore(50),
-      timeLimit: 180,
-      coinReward: Math.floor(30 + (gameState.currentLevel * 5)),
-      color: 'var(--color-text)'
+      coinReward: Math.floor(15 + (level * 2)),
+      disadvantages: [
+        'No time extensions',
+        'Limited word length bonus'
+      ],
+      skipPerk: generateRandomPowerCard(gameState.currentLevel)
+    };
+  };
+
+  // Generate preview of future levels (accordion style)
+  const generateFutureLevels = () => {
+    const futureLevels: Array<{
+      level: number;
+      name: string;
+      description: string;
+      icon: string;
+      targetScore: number;
+      timeLimit: number;
+      coinReward: number;
+      disadvantages: string[];
+      skipPerk: PerkEffect;
+    }> = [];
+    const maxPreview = 3; // Show next 3 levels as preview
+    
+    for (let i = 1; i <= maxPreview; i++) {
+      const level = gameState.currentLevel + i;
+      if (level > gameState.maxLevel) break;
+      
+      const baseScore = 30 + (level * 5);
+      futureLevels.push({
+        level,
+        name: getLevelName(level),
+        description: getLevelDescription(level),
+        icon: getLevelIcon(level),
+        targetScore: calculateTargetScore(baseScore),
+        timeLimit: 120 - (i * 10),
+        coinReward: Math.floor(15 + (level * 2)),
+        disadvantages: getLevelDisadvantages(level),
+        skipPerk: generateRandomPowerCard(level)
+      });
     }
-  ];
+    
+    return futureLevels;
+  };
+
+  // Helper functions for level generation
+  const getLevelName = (level: number): string => {
+    const names = [
+      'WORD HUNT', 'VOWEL VOID', 'LETTER LOCKDOWN', 'CONSONANT CHAOS',
+      'TIME PRESSURE', 'LENGTH LIMIT', 'DIAGONAL DENIAL', 'SYMMETRY SEEKER',
+      'PALINDROME PUSH', 'ANAGRAM ATTACK', 'RHYME TIME', 'ALLITERATION ALLEY',
+      'SYLLABLE SURGE', 'PREFIX POWER', 'SUFFIX STORM', 'COMPOUND CRAZE'
+    ];
+    return names[(level - 1) % names.length];
+  };
+
+  const getLevelDescription = (level: number): string => {
+    const descriptions = [
+      'Find words in the grid',
+      'Reduced vowel frequency',
+      'Restricted letter movement',
+      'Consonant-heavy grid',
+      'Shorter time limits',
+      'Minimum word length required',
+      'No diagonal connections',
+      'Symmetrical word patterns',
+      'Palindromes score bonus',
+      'Anagram challenges',
+      'Rhyming word pairs',
+      'Alliteration bonuses',
+      'Syllable counting',
+      'Prefix-focused words',
+      'Suffix combinations',
+      'Compound word building'
+    ];
+    return descriptions[(level - 1) % descriptions.length];
+  };
+
+  const getLevelIcon = (level: number): string => {
+    const icons = ['>>', 'AE', '##', 'CC', '||', 'LL', 'DD', 'SS', 'PP', 'AA', 'RR', 'AL', 'SY', 'PF', 'SF', 'CP'];
+    return icons[(level - 1) % icons.length];
+  };
+
+  const getLevelDisadvantages = (level: number): string[] => {
+    const disadvantageSets = [
+      ['No time extensions', 'Limited word length bonus'],
+      ['30% fewer vowels', 'Vowels worth +1 point each'],
+      ['Can only move horizontally/vertically', 'No diagonal connections'],
+      ['80% consonants', 'Consonant chains required'],
+      ['Time limit reduced by 30s', 'Speed bonus required'],
+      ['Minimum 4-letter words only', 'Short words penalized'],
+      ['Grid movement restricted', 'Linear paths only'],
+      ['Words must be symmetrical', 'Pattern matching required'],
+      ['Palindromes score 3x', 'Other words penalized'],
+      ['Anagrams score bonus', 'Word scrambling required'],
+      ['Rhyming pairs bonus', 'Sound matching needed'],
+      ['Alliteration required', 'Same letter starts'],
+      ['Syllable counting', 'Complex word structures'],
+      ['Prefix-focused scoring', 'Word beginnings matter'],
+      ['Suffix combinations', 'Word endings important'],
+      ['Compound words only', 'Multi-word combinations']
+    ];
+    return disadvantageSets[(level - 1) % disadvantageSets.length];
+  };
+
+  const currentChallenge = generateCurrentLevelChallenge();
+  const futureLevels = generateFutureLevels();
   
   const handleChallengeSelect = (challengeData: any) => {
     const challenge = {
@@ -75,14 +167,26 @@ function ChallengeSelection() {
       name: challengeData.name,
       description: challengeData.description,
       targetScore: challengeData.targetScore,
-      maxWords: challengeData.type === 'quick' ? 15 : challengeData.type === 'standard' ? 25 : 35,
+      maxWords: 20,
       timeLimit: challengeData.timeLimit,
       coinReward: challengeData.coinReward,
+      disadvantages: challengeData.disadvantages,
+      skipPerk: challengeData.skipPerk,
       specialRule: null,
       canSkip: true
     };
     
     selectChallenge(challenge);
+  };
+
+  const handleSkipLevel = () => {
+    dispatch({ 
+      type: 'SKIP_LEVEL', 
+      payload: { 
+        level: gameState.currentLevel,
+        perk: currentChallenge.skipPerk
+      } 
+    });
   };
   
   return (
@@ -109,7 +213,7 @@ function ChallengeSelection() {
         textTransform: 'uppercase',
         textAlign: 'center'
       }}>
-        [&gt;] CHOOSE YOUR CHALLENGE [&lt;]
+        [&gt;] LEVEL {gameState.currentLevel} [&lt;]
       </div>
 
       {/* Run & Level Info */}
@@ -117,7 +221,7 @@ function ChallengeSelection() {
         display: 'flex',
         justifyContent: 'space-between',
         width: '100%',
-        maxWidth: '400px',
+        maxWidth: '500px',
         marginBottom: '20px',
         fontSize: '16px',
         fontWeight: 'bold',
@@ -129,84 +233,248 @@ function ChallengeSelection() {
         <div>[C] {gameState.coins}</div>
       </div>
 
-      {/* Inventory Count */}
+      {/* Active Power Cards Display */}
+      {gameState.activePerks && gameState.activePerks.length > 0 && (
+        <div style={{
+          background: 'var(--color-accent)',
+          borderBottom: '3px solid var(--color-text)',
+          padding: '8px 12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          overflowX: 'auto',
+          flexShrink: 0
+        }}>
+          <div style={{
+            fontSize: '14px',
+            color: 'var(--color-bg)',
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            flexShrink: 0
+          }}>
+            POWER CARDS:
+          </div>
+          {gameState.activePerks.map((perk, index) => (
+            <div key={perk.id} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'var(--color-bg)',
+              border: '2px solid var(--color-text)',
+              padding: '4px 8px',
+              borderRadius: '0',
+              flexShrink: 0,
+              fontSize: '12px',
+              color: 'var(--color-text)',
+              fontWeight: 'bold'
+            }}>
+              <span>{getPerkEmoji(perk.name)}</span>
+              <span style={{ fontSize: '10px' }}>{perk.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Current Level - Playable */}
+      <div style={{ 
+        width: '100%',
+        maxWidth: '500px',
+        marginBottom: '20px'
+      }}>
+        <div
+          className="gb-button"
+          onClick={() => {
+            setSelectedType(currentChallenge.type);
+            setTimeout(() => handleChallengeSelect(currentChallenge), 100);
+          }}
+          style={{
+            background: selectedType === currentChallenge.type ? 'var(--color-text)' : 'var(--color-bg)',
+            color: selectedType === currentChallenge.type ? 'var(--color-bg)' : 'var(--color-text)',
+            border: '4px solid var(--color-text)',
+            padding: '20px',
+            fontSize: '16px',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            textAlign: 'left',
+            width: '100%'
+          }}
+        >
+          {/* Challenge Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '12px'
+          }}>
+            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+              {currentChallenge.icon} {currentChallenge.name}
+            </div>
+            <div style={{ fontSize: '14px' }}>
+              [C] {currentChallenge.coinReward}
+            </div>
+          </div>
+          
+          <div style={{ 
+            fontSize: '14px', 
+            marginBottom: '12px',
+            fontWeight: 'normal'
+          }}>
+            {currentChallenge.description}
+          </div>
+          
+          {/* Challenge Stats */}
+          <div style={{ 
+            fontSize: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginBottom: '12px'
+          }}>
+            <div>Target: {currentChallenge.targetScore} pts</div>
+            <div>Time: {currentChallenge.timeLimit}s</div>
+          </div>
+
+          {/* Disadvantages */}
+          <div style={{
+            marginBottom: '12px'
+          }}>
+            <div style={{
+              fontSize: '12px',
+              fontWeight: 'bold',
+              marginBottom: '4px',
+              color: 'var(--color-accent)'
+            }}>
+              DISADVANTAGES:
+            </div>
+            {currentChallenge.disadvantages.map((disadvantage, i) => (
+              <div key={i} style={{
+                fontSize: '11px',
+                marginBottom: '2px',
+                color: 'var(--color-accent)'
+              }}>
+                • {disadvantage}
+              </div>
+            ))}
+          </div>
+
+          {/* Skip Perk */}
+          <div style={{
+            background: 'var(--color-accent)',
+            padding: '8px',
+            border: '2px solid var(--color-text)'
+          }}>
+            <div style={{
+              fontSize: '12px',
+              fontWeight: 'bold',
+              marginBottom: '4px',
+              color: 'var(--color-bg)'
+            }}>
+              SKIP PERK: {currentChallenge.skipPerk.name}
+            </div>
+            <div style={{
+              fontSize: '11px',
+              color: 'var(--color-bg)'
+            }}>
+              {currentChallenge.skipPerk.description}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Future Levels Preview - Accordion Style */}
       <div style={{
-        marginBottom: '30px',
-        fontSize: '14px',
-        color: 'var(--color-text)',
-        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+        width: '100%',
+        maxWidth: '500px',
+        marginBottom: '20px'
+      }}>
+        <div style={{
+          fontSize: '16px',
+          fontWeight: 'bold',
+          color: 'var(--color-text)',
+          marginBottom: '10px',
+          textAlign: 'center'
+        }}>
+          FUTURE LEVELS:
+        </div>
+        
+        {futureLevels.map((level, index) => (
+          <div key={level.level} style={{ marginBottom: '8px' }}>
+            {/* Collapsed Level */}
+            <div
+              className="gb-button"
+              onClick={() => setExpandedLevel(expandedLevel === level.level ? null : level.level)}
+              style={{
+                background: 'var(--color-bg)',
+                color: 'var(--color-text)',
+                border: '2px solid var(--color-text)',
+                padding: '8px 12px',
+                fontSize: '12px',
+                fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <div>LEVEL {level.level}: {level.name}</div>
+              <div>{expandedLevel === level.level ? '[-]' : '[+]'}</div>
+            </div>
+            
+            {/* Expanded Level Details */}
+            {expandedLevel === level.level && (
+              <div style={{
+                background: 'var(--color-accent)',
+                border: '2px solid var(--color-text)',
+                padding: '12px',
+                marginTop: '2px',
+                fontSize: '11px',
+                color: 'var(--color-bg)'
+              }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>{level.description}</strong>
+                </div>
+                <div style={{ marginBottom: '8px' }}>
+                  Target: {level.targetScore} pts | Time: {level.timeLimit}s | Coins: {level.coinReward}
+                </div>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>Disadvantages:</strong>
+                  {level.disadvantages.map((dis, i) => (
+                    <div key={i} style={{ marginLeft: '8px' }}>• {dis}</div>
+                  ))}
+                </div>
+                <div>
+                  <strong>Skip Perk:</strong> {level.skipPerk.name} - {level.skipPerk.description}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Skip Level Option */}
+      <div style={{
         textAlign: 'center'
       }}>
-        INVENTORY: {gameState.inventory.length} ITEMS
-      </div>
-      
-      <div style={{ 
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        {challengeTypes.map((challenge, index) => (
-          <button
-            key={challenge.type}
-            className="gb-button"
-            onClick={() => {
-              setSelectedType(challenge.type);
-              setTimeout(() => handleChallengeSelect(challenge), 100);
-            }}
-            style={{
-              background: selectedType === challenge.type ? 'var(--color-text)' : 'var(--color-bg)',
-              color: selectedType === challenge.type ? 'var(--color-bg)' : 'var(--color-text)',
-              border: '4px solid var(--color-text)',
-              padding: '20px',
-              fontSize: '18px',
-              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-              fontWeight: 'bold',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              textAlign: 'center',
-              width: '100%'
-            }}
-          >
-            {/* Challenge icon */}
-            <div style={{
-              fontSize: '24px',
-              marginBottom: '12px',
-              fontWeight: 'bold'
-            }}>
-              {challenge.icon}
-            </div>
-            
-            <div style={{ 
-              fontSize: '20px', 
-              marginBottom: '8px',
-              fontWeight: 'bold'
-            }}>
-              {challenge.name}
-            </div>
-            
-            <div style={{ 
-              fontSize: '14px', 
-              marginBottom: '12px',
-              fontWeight: 'normal'
-            }}>
-              {challenge.description}
-            </div>
-            
-            <div style={{ 
-              fontSize: '14px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              width: '100%',
-              fontWeight: 'bold'
-            }}>
-              <span>[*] {challenge.targetScore}PTS</span>
-              <span>[T] {Math.floor(challenge.timeLimit / 60)}:{(challenge.timeLimit % 60).toString().padStart(2, '0')}</span>
-              <span>[C] {challenge.coinReward}</span>
-            </div>
-          </button>
-        ))}
+        <button
+          className="gb-button"
+          onClick={handleSkipLevel}
+          style={{
+            padding: '12px 24px',
+            fontSize: '14px',
+            background: 'var(--color-accent)',
+            color: 'var(--color-bg)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: 'pointer'
+          }}
+        >
+          [!] SKIP LEVEL (Get Perk, No Coins)
+        </button>
       </div>
     </div>
   );
@@ -219,6 +487,8 @@ function PlayingChallenge() {
   const [wordsFound, setWordsFound] = useState<string[]>([]);
   const [currentWord, setCurrentWord] = useState('');
   const [showScoreBonus, setShowScoreBonus] = useState<number | null>(null);
+  const [powerCardMessages, setPowerCardMessages] = useState<string[]>([]);
+  const [shuffleKey, setShuffleKey] = useState(0);
   
   useEffect(() => {
     const timer = setInterval(() => {
@@ -235,9 +505,36 @@ function PlayingChallenge() {
   }, []);
   
   const handleWordFound = (word: string, score: number) => {
+    // Apply power card effects to the word
+    const powerCardContext: PowerCardContext = {
+      currentWord: word,
+      currentScore: currentScore,
+      totalScore: gameState.totalScore,
+      wordsFound: wordsFound,
+      timeRemaining: timeRemaining,
+      grid: [], // We don't have grid data here, but power cards can still work
+      coins: gameState.coins,
+      activePerks: gameState.activePerks || [],
+      level: gameState.currentLevel
+    };
+
+    const powerCardResult = applyPowerCardEffects(word, score, powerCardContext);
+    
+    // Apply the power card modifications
+    const finalScore = Math.floor(score * powerCardResult.scoreModifier);
+    const coinBonus = powerCardResult.coinBonus;
+    const timeBonus = powerCardResult.timeBonus;
+    
+    // Show power card messages if any
+    if (powerCardResult.messages.length > 0) {
+      setPowerCardMessages(powerCardResult.messages);
+      // Clear messages after 3 seconds
+      setTimeout(() => setPowerCardMessages([]), 3000);
+    }
+
     setWordsFound(prev => [...prev, word]);
     setCurrentScore(prev => {
-      const newScore = prev + score;
+      const newScore = prev + finalScore;
       // Check if we've reached the target score
       const targetScore = gameState.currentChallenge?.targetScore || 500;
       if (newScore >= targetScore) {
@@ -249,11 +546,21 @@ function PlayingChallenge() {
       return newScore;
     });
     
+    // Add coin bonus if any
+    if (coinBonus > 0) {
+      dispatch({ type: 'SPEND_COINS', payload: -coinBonus }); // Negative to add coins
+    }
+    
+    // Add time bonus if any
+    if (timeBonus > 0) {
+      setTimeRemaining(prev => prev + timeBonus);
+    }
+    
     // Enhanced score bonus animation based on word length and score
-    setShowScoreBonus(score);
+    setShowScoreBonus(finalScore);
     
     // Different animation duration based on score magnitude
-    const animationDuration = score >= 11 ? 1500 : score >= 5 ? 1200 : 1000;
+    const animationDuration = finalScore >= 11 ? 1500 : finalScore >= 5 ? 1200 : 1000;
     setTimeout(() => setShowScoreBonus(null), animationDuration);
   };
   
@@ -311,7 +618,14 @@ function PlayingChallenge() {
     return '';
   };
   
-      return (
+  const handleShuffle = () => {
+    if (gameState.coins >= 10) {
+      dispatch({ type: 'SPEND_COINS', payload: 10 });
+      setShuffleKey(prev => prev + 1); // This will force the LetterGrid to re-render with a new board
+    }
+  };
+  
+  return (
     <div style={{ 
       width: '100vw',
       height: 'calc(var(--vh, 1vh) * 100)',
@@ -387,6 +701,48 @@ function PlayingChallenge() {
         </div>
       </div>
 
+      {/* Active Power Cards Display */}
+      {gameState.activePerks && gameState.activePerks.length > 0 && (
+        <div style={{
+          background: 'var(--color-accent)',
+          borderBottom: '3px solid var(--color-text)',
+          padding: '8px 12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          overflowX: 'auto',
+          flexShrink: 0
+        }}>
+          <div style={{
+            fontSize: '14px',
+            color: 'var(--color-bg)',
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            flexShrink: 0
+          }}>
+            POWER CARDS:
+          </div>
+          {gameState.activePerks.map((perk, index) => (
+            <div key={perk.id} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'var(--color-bg)',
+              border: '2px solid var(--color-text)',
+              padding: '4px 8px',
+              borderRadius: '0',
+              flexShrink: 0,
+              fontSize: '12px',
+              color: 'var(--color-text)',
+              fontWeight: 'bold'
+            }}>
+              <span>{getPerkEmoji(perk.name)}</span>
+              <span style={{ fontSize: '10px' }}>{perk.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Current Word Display - Flat design */}
       <div style={{
         height: '60px', /* Bigger */
@@ -442,6 +798,7 @@ function PlayingChallenge() {
         flexDirection: 'column'
       }}>
         <LetterGrid 
+          key={shuffleKey}
           onWordFound={handleWordFound}
           onScoreUpdate={handleScoreUpdate}
           onCurrentWordChange={handleCurrentWordChange}
@@ -451,12 +808,50 @@ function PlayingChallenge() {
         />
       </div>
 
+      {/* Power Card Effects Display */}
+      {powerCardMessages.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 1000,
+          background: 'var(--color-bg)',
+          border: '3px solid var(--color-text)',
+          padding: '16px',
+          borderRadius: '0',
+          maxWidth: '300px',
+          textAlign: 'center',
+          fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+        }}>
+          <div style={{
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: 'var(--color-text)',
+            marginBottom: '8px',
+            textTransform: 'uppercase'
+          }}>
+            POWER CARD EFFECTS!
+          </div>
+          {powerCardMessages.map((message, index) => (
+            <div key={index} style={{
+              fontSize: '14px',
+              color: 'var(--color-accent)',
+              marginBottom: '4px',
+              fontWeight: 'bold'
+            }}>
+              {message}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Bottom Status Panel - Flat design */}
       <div style={{
         background: 'var(--color-bg)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-around',
+        justifyContent: 'space-between',
         borderTop: '3px solid var(--color-text)',
         zIndex: 2,
         flexShrink: 0,
@@ -568,7 +963,70 @@ function PlayingChallenge() {
         </div>
       </div>
       
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginTop: '24px',
+        padding: '0 24px',
+      }}>
+        {/* Shuffle Button */}
+        <button
+          onClick={handleShuffle}
+          disabled={gameState.coins < 10}
+          style={{
+            fontSize: '18px',
+            padding: '12px 24px',
+            background: gameState.coins >= 10 ? 'var(--color-accent)' : 'var(--color-bg)',
+            color: gameState.coins >= 10 ? 'var(--color-bg)' : 'var(--color-text)',
+            border: '3px solid var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            cursor: gameState.coins >= 10 ? 'pointer' : 'not-allowed',
+            opacity: gameState.coins >= 10 ? 1 : 0.5,
+            minWidth: '120px',
+            minHeight: '60px',
+            borderRadius: '0',
+            marginBottom: '8px'
+          }}
+        >
+          SHUFFLE [-10C]
+        </button>
 
+        {/* Power Cards Display (centered, icons in boxes, label below) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0' }}>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '4px' }}>
+            {gameState.activePerks && gameState.activePerks.length > 0 ? (
+              gameState.activePerks.slice(0, 3).map((perk, idx) => (
+                <div key={perk.id} style={{
+                  width: '48px',
+                  height: '48px',
+                  border: '2px solid var(--color-text)',
+                  background: 'var(--color-bg)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '32px',
+                  borderRadius: '0',
+                  margin: 0
+                }}>
+                  {getPerkEmoji(perk.name)}
+                </div>
+              ))
+            ) : (
+              <div style={{ width: '48px', height: '48px', border: '2px solid var(--color-text)', background: 'var(--color-bg)' }} />
+            )}
+          </div>
+          <span style={{ fontSize: '14px', color: 'var(--color-text)', fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace", marginTop: '0', letterSpacing: '1px' }}>Power Cards</span>
+        </div>
+
+        {/* Words Counter (right) */}
+        <div style={{ fontSize: '18px', color: 'var(--color-text)', fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace", fontWeight: 'bold', minWidth: '100px', textAlign: 'right', marginBottom: '8px' }}>
+          Words: {wordsFound.length}
+        </div>
+      </div>
     </div>
   );
 }
@@ -876,199 +1334,70 @@ function RunCompleteView() {
 
 function ShopView() {
   const { gameState, dispatch } = useGame();
-  const [rerollCost, setRerollCost] = useState(2);
-  const [shopItems, setShopItems] = useState(() => generateShopItems());
-  
-  // Generate random shop items with proper rarity distribution
-  function generateShopItems() {
-    const items = [];
-    const rarityWeights = { common: 70, uncommon: 25, rare: 4, legendary: 1 };
+  const [shopItems, setShopItems] = useState<any[]>([]);
+  const [rerollCost, setRerollCost] = useState(3);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCard, setSelectedCard] = useState<any>(null);
+  const [showCardDetails, setShowCardDetails] = useState(false);
+
+  useEffect(() => {
+    // Generate shop items when component mounts
+    setShopItems(generateShopItems());
+    setIsLoading(false);
+  }, []);
+
+  const generateShopItems = () => {
+    const items: any[] = [];
+    const acquiredPerkNames = new Set(gameState.inventory.map(item => item.name));
     
-    // Generate 4-6 items based on current round
-    const itemCount = Math.min(6, 4 + Math.floor(gameState.currentRound / 3));
-    
-    for (let i = 0; i < itemCount; i++) {
-      const rarity = getRandomRarity(rarityWeights);
-      items.push(generateInventoryItem(rarity, i));
+    // Generate 6 unique items
+    for (let i = 0; i < 6; i++) {
+      let attempts = 0;
+      let perk: PerkEffect;
+      
+      // Try to generate a unique perk
+      do {
+        perk = generateRandomPowerCard(gameState.currentLevel);
+        attempts++;
+        if (attempts > 50) break; // Prevent infinite loop
+      } while (acquiredPerkNames.has(perk.name));
+      
+      if (attempts <= 50) {
+        acquiredPerkNames.add(perk.name);
+      }
+      
+      const rarity = getRandomRarity();
+      const cost = calculateCost(rarity, gameState.currentLevel);
+      
+      items.push({
+        id: perk.id,
+        name: perk.name,
+        description: perk.description,
+        rarity,
+        cost,
+        sellValue: Math.floor(cost * 0.5),
+        effect: convertPerkEffectToItemEffect(perk.effect),
+        emoji: getPerkEmoji(perk.name),
+        purchaseLevel: gameState.currentLevel,
+        timesUsed: 0,
+        stackCount: 1,
+        perkEffect: perk.effect // Store the actual perk effect
+      });
     }
     
     return items;
-  }
-  
-  function getRandomRarity(weights) {
-    const total = Object.values(weights).reduce((a, b) => a + b, 0);
-    let random = Math.random() * total;
-    
-    for (const [rarity, weight] of Object.entries(weights)) {
-      random -= weight;
-      if (random <= 0) return rarity;
-    }
-    return 'common';
-  }
-  
-  function generateInventoryItem(rarity, index) {
-    const itemTemplates = {
-      common: [
-        {
-          name: 'Letter Boost',
-          description: '+3 points per letter in words',
-          effect: { type: 'letterMultiplier', value: 3 },
-          cost: 8,
-          emoji: 'AB'
-        },
-        {
-          id: `quick_hands_${index}`,
-          name: 'Quick Hands',
-          description: '+1 Hand per round',
-          effect: { type: 'extraHands', value: 1 },
-          cost: 10,
-          rarity: 'common',
-          emoji: '>>',
-          synergy: ['efficiency']
-        },
-        {
-          id: `coin_magnet_${index}`,
-          name: 'Coin Magnet',
-          description: '+2 coins per word found',
-          effect: { type: 'coinPerWord', value: 2 },
-          cost: 6,
-          rarity: 'common',
-          emoji: '<>',
-          synergy: ['economy']
-        },
-        {
-          id: `vowel_power_${index}`,
-          name: 'Vowel Power',
-          description: 'Vowels glow and give +2 points',
-          effect: { type: 'vowelBonus', value: 2 },
-          cost: 12,
-          rarity: 'common',
-          emoji: 'AE',
-          synergy: ['letter_type']
-        }
-      ],
-      uncommon: [
-        {
-          id: `word_chain_${index}`,
-          name: 'Word Chain',
-          description: 'Each consecutive word: +5 points',
-          effect: { type: 'chainMultiplier', value: 5 },
-          cost: 18,
-          rarity: 'uncommon',
-          emoji: '++',
-          synergy: ['combo']
-        },
-        {
-          id: `double_score_${index}`,
-          name: 'Double Score',
-          description: '2x points for 6+ letter words',
-          effect: { type: 'longWordMultiplier', minLength: 6, multiplier: 2 },
-          cost: 25,
-          rarity: 'uncommon',
-          emoji: 'x2',
-          synergy: ['word_length']
-        },
-        {
-          id: `time_warp_${index}`,
-          name: 'Time Warp',
-          description: '+45 seconds, but -1 Hand',
-          effect: { type: 'timeTradeoff', time: 45, hands: -1 },
-          cost: 20,
-          rarity: 'uncommon',
-          emoji: '||',
-          synergy: ['efficiency']
-        },
-        {
-          id: `letter_thief_${index}`,
-          name: 'Letter Thief',
-          description: 'Steal random letters from unused words',
-          effect: { type: 'letterTheft', chance: 0.3 },
-          cost: 22,
-          rarity: 'uncommon',
-          emoji: '..',
-          synergy: ['manipulation']
-        }
-      ],
-      rare: [
-        {
-          id: `word_forge_${index}`,
-          name: 'Word Forge',
-          description: 'Combine 2 short words → 1 super word',
-          effect: { type: 'wordForge', enabled: true },
-          cost: 35,
-          rarity: 'rare',
-          emoji: '[]',
-          synergy: ['combo', 'word_length']
-        },
-        {
-          id: `golden_letters_${index}`,
-          name: 'Golden Letters',
-          description: 'Random letters become golden (3x points)',
-          effect: { type: 'goldenLetters', count: 3 },
-          cost: 40,
-          rarity: 'rare',
-          emoji: '**',
-          synergy: ['letter_type', 'multiplier']
-        },
-        {
-          id: `word_echo_${index}`,
-          name: 'Word Echo',
-          description: 'Finding a word grants a "ghost" copy',
-          effect: { type: 'wordEcho', chance: 0.5 },
-          cost: 45,
-          rarity: 'rare',
-          emoji: '~~',
-          synergy: ['combo']
-        },
-        {
-          id: `score_vampire_${index}`,
-          name: 'Score Vampire',
-          description: 'Gain health equal to 10% of score',
-          effect: { type: 'scoreToHealth', ratio: 0.1 },
-          cost: 38,
-          rarity: 'rare',
-          emoji: '@@',
-          synergy: ['survival']
-        }
-      ],
-      legendary: [
-        {
-          id: `letter_god_${index}`,
-          name: 'Letter God',
-          description: 'All letters become any letter you need',
-          effect: { type: 'letterGod', enabled: true },
-          cost: 80,
-          rarity: 'legendary',
-          emoji: '##',
-          synergy: ['manipulation', 'godlike']
-        },
-        {
-          id: `word_singularity_${index}`,
-          name: 'Word Singularity',
-          description: 'Each word multiplies ALL future words by 1.1x',
-          effect: { type: 'exponentialGrowth', multiplier: 1.1 },
-          cost: 100,
-          rarity: 'legendary',
-          emoji: '88',
-          synergy: ['combo', 'multiplier']
-        },
-        {
-          id: `reality_hack_${index}`,
-          name: 'Reality Hack',
-          description: 'Break one game rule permanently',
-          effect: { type: 'ruleBreaker', enabled: true },
-          cost: 120,
-          rarity: 'legendary',
-          emoji: '!!',
-          synergy: ['godlike']
-        }
-      ]
-    };
-    
-    const pool = powerUps[rarity];
-    return pool[Math.floor(Math.random() * pool.length)];
-  }
-  
+  };
+
+  const handleCardClick = (item: any) => {
+    setSelectedCard(item);
+    setShowCardDetails(true);
+  };
+
+  const handleCloseCardDetails = () => {
+    setShowCardDetails(false);
+    setSelectedCard(null);
+  };
+
   const handlePurchase = (item) => {
     if (gameState.coins >= item.cost) {
       // Convert shop item to inventory item format
@@ -1087,6 +1416,11 @@ function ShopView() {
       
       // Remove purchased item from shop
       setShopItems(prev => prev.filter(shopItem => shopItem.id !== item.id));
+      
+      // Close card details if this card was selected
+      if (selectedCard && selectedCard.id === item.id) {
+        handleCloseCardDetails();
+      }
     }
   };
 
@@ -1135,10 +1469,96 @@ function ShopView() {
   
   // Calculate synergy bonuses
   const calculateSynergies = (item) => {
-    const ownedSynergies = gameState.powerUps.flatMap(p => p.synergy || []);
-    const itemSynergies = item.synergy || [];
-    const matches = itemSynergies.filter(s => ownedSynergies.includes(s));
-    return matches.length;
+    // For now, return 0 since synergy system isn't fully implemented
+    // In the future, this could check for matching power card types or effects
+    return 0;
+  };
+
+  // Helper functions
+  const getRandomRarity = (): Rarity => {
+    const rand = Math.random();
+    if (rand < 0.7) return 'common';
+    if (rand < 0.95) return 'uncommon';
+    if (rand < 0.99) return 'rare';
+    return 'legendary';
+  };
+
+  const calculateCost = (rarity: Rarity, level: number): number => {
+    const baseCosts = { common: 10, uncommon: 25, rare: 60, legendary: 150 };
+    return Math.floor(baseCosts[rarity] * (1 + level * 0.2));
+  };
+
+  const getPerkEmoji = (perkName: string): string => {
+    const emojiMap: { [key: string]: string } = {
+      'Letter Alchemist': '🔮',
+      'Vowel Vampire': '🧛',
+      'Consonant Crusher': '💪',
+      'Golden Vowels': '✨',
+      'Length Lord': '📏',
+      'Short Stack': '📦',
+      'Long Shot': '🎯',
+      'Perfect Length': '⭐',
+      'Time Warp': '⏰',
+      'Speed Demon': '⚡',
+      'Time Bank': '🏦',
+      'Frozen Time': '❄️',
+      'Palindrome Prince': '👑',
+      'Anagram King': '🎭',
+      'Rhyme Master': '🎵',
+      'Alliteration Ace': '🎪',
+      'Diagonal Dancer': '💃',
+      'Pathfinder': '🗺️',
+      'Grid Master': '🎮',
+      'Spiral Seeker': '🌀',
+      'Score Doubler': '🎲',
+      'Chain Master': '⛓️',
+      'Combo King': '👑',
+      'Streak Seeker': '🔥',
+      'Noun Hunter': '🏹',
+      'Verb Virtuoso': '🎭',
+      'Adjective Ace': '🎨',
+      'Plural Power': '📚',
+      'Word Echo': '🔄',
+      'Letter God': '👑',
+      'Infinite Loop': '♾️',
+      'Reality Hack': '💻',
+      'Coin Magnet': '🧲',
+      'Rich Words': '💰',
+      'Investment Banker': '🏛️',
+      'Lucky Strike': '🍀',
+      'Synergy Master': '🔗',
+      'Power Collector': '🃏',
+      'Perfect Pair': '💕',
+      'Trinity Force': '☯️',
+      'Risk Taker': '🎲',
+      'Speed Runner': '🏃',
+      'Perfectionist': '✨',
+      'Underdog': '🐕',
+      'Wild Card': '🃏',
+      'Power Wild': '🎭',
+      'Chaos Theory': '🌪️',
+      'Quantum Leap': '🚀',
+      'Meta Master': '🧠',
+      'Power Power': '🎪',
+      'Infinite Power': '♾️',
+      'Power God': '👑'
+    };
+    return emojiMap[perkName] || '🎯';
+  };
+
+  const convertPerkEffectToItemEffect = (perkEffect: PerkEffectType): any => {
+    // Convert PerkEffectType to ItemEffect - this is a simplified conversion
+    // In a real implementation, you'd want to map each effect type properly
+    switch (perkEffect.type) {
+      case 'timeBonus':
+        return { type: 'timeExtender', seconds: perkEffect.seconds };
+      case 'scoreMultiplier':
+        return { type: 'letterMultiplier', value: perkEffect.value };
+      case 'coinMultiplier':
+        return { type: 'coinMultiplier', value: perkEffect.value };
+      default:
+        return { type: 'letterMultiplier', value: 1.5 }; // Default fallback
+    }
   };
 
   return (
@@ -1165,8 +1585,8 @@ function ShopView() {
         alignItems: 'center',
         justifyContent: 'center',
         paddingTop: `calc(env(safe-area-inset-top, 0px) + 12px)`,
-        paddingLeft: '16px',
-        paddingRight: '16px',
+        paddingLeft: '12px',
+        paddingRight: '12px',
         position: 'relative'
       }}>
         <h1 style={{
@@ -1215,7 +1635,6 @@ function ShopView() {
         }}>
           <span style={{ fontSize: '24px' }}>[C]</span>
           <span>{gameState.coins}</span>
-          <span style={{ fontSize: '18px' }}>COINS</span>
         </div>
       </div>
 
@@ -1243,175 +1662,62 @@ function ShopView() {
             [S] SHOP ITEMS [S]
           </h2>
           
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '16px',
-            maxWidth: '800px',
-            margin: '0 auto'
-          }}>
-            {shopItems.map((item, index) => (
-            <div 
-              key={index}
-              className="gb-button"
-              style={{
-                cursor: gameState.coins >= item.cost ? 'pointer' : 'not-allowed',
-                opacity: gameState.coins >= item.cost ? 1 : 0.5,
-                minHeight: '200px',
-                display: 'flex',
-                flexDirection: 'column',
-                background: gameState.coins >= item.cost ? 'var(--color-bg)' : 'var(--color-accent)',
-                color: 'var(--color-text)',
-                border: item.rarity === 'legendary' ? '4px solid var(--color-text)' : 
-                       item.rarity === 'rare' ? '3px solid var(--color-text)' : '2px solid var(--color-text)',
-                padding: '16px',
-                fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-                textAlign: 'center'
-              }}
-              onClick={() => gameState.coins >= item.cost && handlePurchase(item)}
-            >
-              {/* Card Header - Flat */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '12px'
-              }}>
-                <div style={{
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  textTransform: 'uppercase',
-                  color: 'var(--color-text)'
-                }}>
-                  {item.rarity}
-                </div>
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  color: 'var(--color-text)'
-                }}>
-                  <span>[C]</span>
-                  <span>{item.cost}</span>
-                </div>
-              </div>
-
-              {/* Card Icon - Flat */}
-              <div style={{
-                fontSize: '36px',
-                textAlign: 'center',
-                marginBottom: '12px',
-                fontWeight: 'bold',
-                color: 'var(--color-text)'
-              }}>
-                {item.emoji}
-              </div>
-
-              {/* Card Title - Flat */}
-              <div style={{
-                fontSize: '18px',
-                fontWeight: 'bold',
-                textAlign: 'center',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-                color: 'var(--color-text)'
-              }}>
-                {item.name}
-              </div>
-
-              {/* Card Description - Flat */}
-              <div style={{
-                fontSize: '14px',
-                textAlign: 'center',
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 8px',
-                lineHeight: '1.4',
-                color: 'var(--color-text)'
-              }}>
-                {item.description}
-              </div>
-
-              {/* Synergy Tags - Flat */}
-              {item.synergies && item.synergies.length > 0 && (
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '4px',
-                  marginTop: '12px',
-                  justifyContent: 'center'
-                }}>
-                  {item.synergies.map((synergy, i) => (
-                    <span 
-                      key={i}
-                      style={{
-                        fontSize: '12px',
-                        background: 'var(--color-accent)',
-                        color: 'var(--color-bg)',
-                        padding: '4px 8px',
-                        border: '1px solid var(--color-text)',
-                        textTransform: 'uppercase',
-                        fontWeight: 'bold',
-                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
-                      }}
-                    >
-                      {synergy}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-          </div>
-        </div>
-
-        {/* Inventory Section */}
-        {gameState.inventory.length > 0 && (
-          <div style={{
-            marginBottom: '20px'
-          }}>
-            <h2 style={{
-              fontSize: '20px',
-              fontWeight: 'bold',
+          {isLoading ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '40px',
               color: 'var(--color-text)',
               fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-              textAlign: 'center',
-              marginBottom: '20px',
-              textTransform: 'uppercase'
+              fontSize: '16px'
             }}>
-              [I] YOUR INVENTORY [I]
-            </h2>
-            
+              LOADING SHOP ITEMS...
+            </div>
+          ) : shopItems.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '40px',
+              color: 'var(--color-accent)',
+              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+              fontSize: '16px'
+            }}>
+              NO ITEMS AVAILABLE
+            </div>
+          ) : (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '16px',
-              maxWidth: '800px',
+              maxWidth: '1200px',
               margin: '0 auto'
             }}>
-              {gameState.inventory.map((item, index) => (
+              {shopItems.map((item, index) => (
                 <div 
                   key={index}
                   className="gb-button"
                   style={{
-                    minHeight: '200px',
+                    cursor: 'pointer',
+                    minHeight: '280px',
                     display: 'flex',
                     flexDirection: 'column',
-                    background: 'var(--color-accent)',
+                    background: 'var(--color-bg)',
                     color: 'var(--color-text)',
-                    border: '3px solid var(--color-text)',
+                    border: item.rarity === 'legendary' ? '4px solid var(--color-text)' : 
+                           item.rarity === 'rare' ? '3px solid var(--color-text)' : '2px solid var(--color-text)',
                     padding: '16px',
                     fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
                     textAlign: 'center',
-                    cursor: 'pointer'
+                    position: 'relative',
+                    transition: 'transform 0.1s ease'
                   }}
-                  onClick={() => handleSell(item.id)}
+                  onClick={() => handleCardClick(item)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
                 >
-                  {/* Owned Item Header */}
+                  {/* Card Header - Flat */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -1419,125 +1725,442 @@ function ShopView() {
                     marginBottom: '12px'
                   }}>
                     <div style={{
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      textTransform: 'uppercase',
+                      color: 'var(--color-text)'
+                    }}>
+                      {item.rarity}
+                    </div>
+                    <div style={{
                       fontSize: '14px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      color: 'var(--color-text)'
+                    }}>
+                      <span>[C]</span>
+                      <span>{item.cost}</span>
+                    </div>
+                  </div>
+
+                  {/* Card Icon - Flat */}
+                  <div style={{
+                    fontSize: '48px',
+                    textAlign: 'center',
+                    marginBottom: '12px',
+                    fontWeight: 'bold',
+                    color: 'var(--color-text)'
+                  }}>
+                    {item.emoji}
+                  </div>
+
+                  {/* Card Title - Flat */}
+                  <div style={{
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    color: 'var(--color-text)',
+                    marginBottom: '8px',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.2
+                  }}>
+                    {item.name}
+                  </div>
+
+                  {/* Card Description - Flat */}
+                  <div style={{
+                    fontSize: '12px',
+                    color: 'var(--color-text)',
+                    lineHeight: 1.3,
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {item.description}
+                  </div>
+
+                  {/* Click to view details hint */}
+                  <div style={{
+                    fontSize: '10px',
+                    color: 'var(--color-accent)',
+                    marginTop: '8px',
+                    fontStyle: 'italic'
+                  }}>
+                    CLICK TO VIEW DETAILS
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Inventory Section */}
+        <div style={{
+          marginBottom: '30px'
+        }}>
+          <h2 style={{
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: 'var(--color-text)',
+            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+            textAlign: 'center',
+            marginBottom: '20px',
+            textTransform: 'uppercase'
+          }}>
+            [I] INVENTORY [I]
+          </h2>
+          
+          {gameState.inventory.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '40px',
+              color: 'var(--color-accent)',
+              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+              fontSize: '16px'
+            }}>
+              NO ITEMS OWNED
+            </div>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '16px',
+              maxWidth: '1200px',
+              margin: '0 auto'
+            }}>
+              {gameState.inventory.map((item, index) => (
+                <div 
+                  key={index}
+                  style={{
+                    minHeight: '200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: 'var(--color-accent)',
+                    color: 'var(--color-bg)',
+                    border: '2px solid var(--color-text)',
+                    padding: '16px',
+                    fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                    textAlign: 'center',
+                    position: 'relative'
+                  }}
+                >
+                  {/* Inventory Item Header */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{
+                      fontSize: '12px',
                       fontWeight: 'bold',
                       textTransform: 'uppercase'
                     }}>
-                      OWNED x{item.stackCount}
+                      OWNED
                     </div>
                     <div style={{
-                      fontSize: '16px',
+                      fontSize: '14px',
                       fontWeight: 'bold',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '4px'
                     }}>
-                      <span>SELL: [C]</span>
+                      <span>[S]</span>
                       <span>{item.sellValue}</span>
                     </div>
                   </div>
 
-                  {/* Item Details */}
+                  {/* Inventory Item Icon */}
                   <div style={{
-                    fontSize: '24px',
+                    fontSize: '36px',
                     textAlign: 'center',
-                    marginBottom: '8px',
+                    marginBottom: '12px',
                     fontWeight: 'bold'
                   }}>
                     {item.emoji}
                   </div>
 
+                  {/* Inventory Item Title */}
                   <div style={{
-                    fontSize: '16px',
+                    fontSize: '14px',
                     fontWeight: 'bold',
-                    textAlign: 'center',
                     marginBottom: '8px',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    lineHeight: 1.2
                   }}>
                     {item.name}
                   </div>
 
-                  <div style={{
-                    fontSize: '12px',
-                    textAlign: 'center',
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0 8px',
-                    lineHeight: '1.4'
-                  }}>
-                    {item.description}
-                  </div>
+                  {/* Stack Count */}
+                  {item.stackCount > 1 && (
+                    <div style={{
+                      fontSize: '12px',
+                      marginTop: '8px',
+                      fontWeight: 'bold'
+                    }}>
+                      STACK: {item.stackCount}
+                    </div>
+                  )}
 
-                  <div style={{
-                    fontSize: '12px',
-                    marginTop: '8px',
-                    opacity: 0.8
-                  }}>
-                    BOUGHT: LVL {item.purchaseLevel}
-                  </div>
+                  {/* Sell Button */}
+                  <button
+                    onClick={() => handleSell(item.id)}
+                    style={{
+                      marginTop: '12px',
+                      padding: '8px 16px',
+                      background: 'var(--color-bg)',
+                      color: 'var(--color-text)',
+                      border: '2px solid var(--color-text)',
+                      fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    SELL
+                  </button>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{
+          display: 'flex',
+          gap: '16px',
+          justifyContent: 'center',
+          marginTop: '20px'
+        }}>
+          <button
+            onClick={handleReroll}
+            disabled={gameState.coins < rerollCost}
+            style={{
+              padding: '12px 24px',
+              background: gameState.coins >= rerollCost ? 'var(--color-accent)' : 'var(--color-bg)',
+              color: gameState.coins >= rerollCost ? 'var(--color-bg)' : 'var(--color-text)',
+              border: '3px solid var(--color-text)',
+              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: gameState.coins >= rerollCost ? 'pointer' : 'not-allowed',
+              textTransform: 'uppercase'
+            }}
+          >
+            REROLL [C] {rerollCost}
+          </button>
+          
+          <button
+            onClick={handleContinue}
+            style={{
+              padding: '12px 24px',
+              background: 'var(--color-accent)',
+              color: 'var(--color-bg)',
+              border: '3px solid var(--color-text)',
+              fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              textTransform: 'uppercase'
+            }}
+          >
+            CONTINUE
+          </button>
+        </div>
       </div>
 
-      {/* Bottom Controls - Flat Game Boy */}
-      <div style={{
-        width: '100%',
-        height: '80px',
-        background: 'var(--color-bg)',
-        border: '3px solid var(--color-text)',
-        borderTop: '3px solid var(--color-text)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 20px',
-        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 12px)`
-      }}>
-        <button 
-          className="gb-button"
-          onClick={handleReroll}
-          disabled={gameState.coins < rerollCost}
-          style={{
-            fontSize: '16px',
-            padding: '12px 20px',
-            background: gameState.coins >= rerollCost ? 'var(--color-bg)' : 'var(--color-accent)',
-            color: 'var(--color-text)',
-            border: '3px solid var(--color-text)',
+      {/* Card Details Modal */}
+      {showCardDetails && selectedCard && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'var(--color-bg)',
+            border: '4px solid var(--color-text)',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '100%',
             fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            cursor: gameState.coins >= rerollCost ? 'pointer' : 'not-allowed',
-            opacity: gameState.coins >= rerollCost ? 1 : 0.5
-          }}
-        >
-          [R] REROLL ({rerollCost}[C])
-        </button>
-        
-        <button 
-          className="gb-button"
-          onClick={handleContinue}
-          style={{
-            fontSize: '16px',
-            padding: '12px 24px',
-            background: 'var(--color-text)',
-            color: 'var(--color-bg)',
-            border: '3px solid var(--color-text)',
-            fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            cursor: 'pointer'
-          }}
-        >
-          {gameState.currentLevel >= gameState.maxLevel ? 'COMPLETE RUN [!]' : `LEVEL ${gameState.currentLevel + 1} [>]`}
-        </button>
-      </div>
+            textAlign: 'center'
+          }}>
+            {/* Card Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                color: 'var(--color-text)'
+              }}>
+                {selectedCard.rarity}
+              </div>
+              <div style={{
+                fontSize: '16px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                color: 'var(--color-text)'
+              }}>
+                <span>[C]</span>
+                <span>{selectedCard.cost}</span>
+              </div>
+            </div>
+
+            {/* Card Icon */}
+            <div style={{
+              fontSize: '64px',
+              textAlign: 'center',
+              marginBottom: '16px',
+              fontWeight: 'bold',
+              color: 'var(--color-text)'
+            }}>
+              {selectedCard.emoji}
+            </div>
+
+            {/* Card Title */}
+            <div style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: 'var(--color-text)',
+              marginBottom: '12px',
+              textTransform: 'uppercase',
+              lineHeight: 1.2
+            }}>
+              {selectedCard.name}
+            </div>
+
+            {/* Card Description */}
+            <div style={{
+              fontSize: '14px',
+              color: 'var(--color-text)',
+              lineHeight: 1.4,
+              marginBottom: '20px'
+            }}>
+              {selectedCard.description}
+            </div>
+
+            {/* Detailed Effect Description */}
+            <div style={{
+              fontSize: '12px',
+              color: 'var(--color-accent)',
+              lineHeight: 1.3,
+              marginBottom: '20px',
+              padding: '12px',
+              background: 'var(--color-bg)',
+              border: '2px solid var(--color-text)'
+            }}>
+              {getDetailedEffectDescription(selectedCard.perkEffect)}
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={handleCloseCardDetails}
+                style={{
+                  padding: '8px 16px',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  border: '2px solid var(--color-text)',
+                  fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase'
+                }}
+              >
+                CLOSE
+              </button>
+              
+              <button
+                onClick={() => handlePurchase(selectedCard)}
+                disabled={gameState.coins < selectedCard.cost}
+                style={{
+                  padding: '8px 16px',
+                  background: gameState.coins >= selectedCard.cost ? 'var(--color-accent)' : 'var(--color-bg)',
+                  color: gameState.coins >= selectedCard.cost ? 'var(--color-bg)' : 'var(--color-text)',
+                  border: '2px solid var(--color-text)',
+                  fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace",
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: gameState.coins >= selectedCard.cost ? 'pointer' : 'not-allowed',
+                  textTransform: 'uppercase'
+                }}
+              >
+                PURCHASE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// Helper function to get detailed effect descriptions
+const getDetailedEffectDescription = (effect: any): string => {
+  switch (effect.type) {
+    case 'scoreMultiplier':
+      return `This power card multiplies ALL your word scores by ${effect.value}x. This is a powerful effect that works on every word you find!`;
+    case 'timeBonus':
+      return `Adds ${effect.seconds} seconds to your time limit. Perfect for when you need more time to find those long words!`;
+    case 'vowelTheft':
+      return `Has a ${Math.floor(effect.chance * 100)}% chance to steal a vowel from unused words, giving you a 1.5x score bonus. Vowels are precious!`;
+    case 'consonantMultiplier':
+      return `All consonants in your words are worth ${effect.value}x points. Great for consonant-heavy words!`;
+    case 'goldenVowels':
+      return `All vowels become golden and worth 3x points. Vowels are now your best friends!`;
+    case 'lengthBonus':
+      return `Each letter in your words adds +${effect.value}% to the score. Longer words get bigger bonuses!`;
+    case 'shortWordMultiplier':
+      return `Short words (2-3 letters) score ${effect.value}x. Perfect for quick scoring!`;
+    case 'longWordMultiplier':
+      return `Long words (8+ letters) score ${effect.value}x. Rewards your word-finding skills!`;
+    case 'perfectLength':
+      return `5-letter words score ${effect.value}x. The perfect length gets the perfect bonus!`;
+    case 'palindromeMultiplier':
+      return `Palindromes (words that read the same forwards and backwards) score ${effect.value}x. Racecar!`;
+    case 'anagramMultiplier':
+      return `Anagrams (words with the same letters rearranged) score ${effect.value}x. Find word families!`;
+    case 'rhymeMultiplier':
+      return `Rhyming words score ${effect.value}x. Sound patterns matter!`;
+    case 'alliterationMultiplier':
+      return `Alliterations (words starting with the same letter) score ${effect.value}x. All about that alliteration!`;
+    case 'wordEcho':
+      return `Has a ${Math.floor(effect.chance * 100)}% chance to duplicate your word, giving you double the score!`;
+    case 'coinPerWord':
+      return `Gives you +${effect.value} coins for every word you find. Build your wealth!`;
+    case 'wordToCoins':
+      return `Longer words give you bonus coins. More letters = more money!`;
+    case 'luckyCoins':
+      return `Has a ${Math.floor(effect.chance * 100)}% chance to give you +10 coins. Lady luck smiles upon you!`;
+    case 'jokerMultiplier':
+      return `Each power card you own adds +0.5x to your score multiplier. Collect them all!`;
+    default:
+      return `This power card has a special effect that will help you score more points and progress further in the game!`;
+  }
+};
 
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
