@@ -7,7 +7,7 @@ import requests
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this'
+app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-for-development')
 
 # WORD DICTIONARY API
 def validate_word_api(word):
@@ -238,6 +238,10 @@ def calculate_word_score(word, power_deck, found_words, last_round_letters):
     
     return base_score + bonus_score, effects
 
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
 @app.route('/')
 def index():
     if 'game_state' not in session:
@@ -432,4 +436,5 @@ def reset_game():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     debug = os.environ.get('FLASK_ENV') != 'production'
+    print(f"Starting Flask app on port {port}, debug={debug}")
     app.run(debug=debug, host='0.0.0.0', port=port) 
