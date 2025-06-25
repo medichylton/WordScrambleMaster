@@ -2,201 +2,249 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Word Scramble Master</title>
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#9BBB0F">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Word Scramble Master">
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Word Scramble Master</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
 </head>
 <body>
-    <!-- Game Container -->
-    <div id="gameContainer" class="game-container">
-        
-        <!-- MAIN MENU PHASE -->
-        <div id="menuPhase" class="game-phase hidden">
-            <div class="menu-container">
-                <div class="game-title">
-                    <h1>Word Scramble<br/>Master</h1>
-                </div>
-                
-                <div class="menu-frame">
-                    <div class="menu-buttons">
-                        <button id="continueBtn" class="gb-button primary hidden">Continue Game</button>
-                        <button id="newGameBtn" class="gb-button primary">New Game</button>
-                        <button id="settingsBtn" class="gb-button secondary">Settings</button>
-                    </div>
+    <div class="game-container">
+        <!-- Main Menu Phase -->
+        <div id="menu-phase" class="game-phase">
+            <div class="game-title">
+                <h1>Word Scramble<br>Master</h1>
+            </div>
+            
+            <div class="menu-frame">
+                <div class="menu-buttons">
+                    <button id="start-game" class="gb-button primary">Start Adventure</button>
+                    <button id="view-stats" class="gb-button secondary">View Stats</button>
+                    <button id="settings" class="gb-button secondary">Settings</button>
                 </div>
             </div>
-        </div>
-        
-        <!-- CHALLENGE SELECT PHASE -->
-        <div id="challengeSelectPhase" class="game-phase hidden">
-            <div class="challenge-container">
-                <div class="challenge-header">
-                    <h2>Select Challenge</h2>
-                    <div class="ante-info">
-                        <span id="anteDisplay">Ante 1</span> • <span id="roundDisplay">Round 1</span>
-                    </div>
-                </div>
-                
-                <div class="challenge-card">
-                    <div class="challenge-title">
-                        <span id="challengeName">Word Hunt</span>
-                        <span id="challengeIcon">🎯</span>
-                    </div>
-                    <div class="challenge-details">
-                        <div class="goal">Goal: <span id="goalScore">300</span> points</div>
-                        <div class="time">Time: <span id="timeLimit">120</span>s</div>
-                        <div class="attempts">Attempts: <span id="attemptsLimit">3</span> words</div>
-                    </div>
-                    <div class="challenge-rewards">
-                        💰 <span id="coinReward">50</span> coins on success
-                    </div>
-                    <button id="startChallengeBtn" class="gb-button primary">Start Challenge</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- PLAYING PHASE -->
-        <div id="playingPhase" class="game-phase hidden">
-            <!-- Game Header -->
-            <div class="game-header">
+            
+            <div class="game-info">
                 <div class="stats-row">
-                    <div class="coins">💰 <span id="coinsDisplay">100</span></div>
-                    <div class="score">Score: <span id="scoreDisplay">0</span>/<span id="targetDisplay">300</span></div>
-                    <div class="timer">⏰ <span id="timerDisplay">120</span>s</div>
+                    <span>Best Score:</span>
+                    <span id="best-score">0</span>
                 </div>
-                <div class="attempts-row">
-                    Words remaining: <span id="wordsRemainingDisplay">3</span>
+                <div class="stats-row">
+                    <span>Games Won:</span>
+                    <span id="games-won">0</span>
                 </div>
-            </div>
-            
-            <!-- Power Cards Deck -->
-            <div class="power-deck-section">
-                <div class="deck-label">Power Deck</div>
-                <div id="powerDeckContainer" class="power-deck-container">
-                    <!-- Power cards will be inserted here -->
-                </div>
-            </div>
-            
-            <!-- Letter Grid -->
-            <div class="grid-container">
-                <div id="letterGrid" class="letter-grid">
-                    <!-- 5x5 grid will be generated here -->
-                </div>
-            </div>
-            
-            <!-- Current Word Display -->
-            <div class="word-display">
-                <div id="currentWord" class="current-word">TAP LETTERS TO SPELL</div>
-                <div id="wordValidation" class="word-validation"></div>
-            </div>
-            
-            <!-- Game Actions -->
-            <div class="game-actions">
-                <button id="shuffleBtn" class="gb-button secondary">🔄 Shuffle (30🪙)</button>
             </div>
         </div>
-        
-        <!-- SHOP PHASE -->
-        <div id="shopPhase" class="game-phase hidden">
+
+        <!-- Challenge Select Phase -->
+        <div id="challenge-phase" class="game-phase hidden">
+            <div class="challenge-container">
+                <h2>Select Ante</h2>
+                <div class="ante-info">
+                    <div class="stats-row">
+                        <span>Current Ante:</span>
+                        <span id="current-ante">1</span>
+                    </div>
+                    <div class="stats-row">
+                        <span>Round:</span>
+                        <span id="current-round">1/3</span>
+                    </div>
+                    <div class="stats-row">
+                        <span>Score:</span>
+                        <span id="game-score">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span>Money:</span>
+                        <span id="player-money">10</span>
+                    </div>
+                </div>
+                
+                <div class="power-deck-section">
+                    <div class="deck-label">Power Cards</div>
+                    <div class="power-deck-container" id="power-deck">
+                        <!-- Power cards will be inserted here -->
+                    </div>
+                </div>
+
+                <button id="start-round" class="gb-button primary">Start Round</button>
+                <button id="back-to-menu" class="gb-button secondary">Back to Menu</button>
+            </div>
+        </div>
+
+        <!-- Playing Phase -->
+        <div id="playing-phase" class="game-phase hidden">
+            <div class="playing-container">
+                <!-- Game Status -->
+                <div class="game-info">
+                    <div class="info-item">
+                        <div class="info-label">Ante</div>
+                        <div class="info-value" id="playing-ante">1</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Round</div>
+                        <div class="info-value" id="playing-round">1/3</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Score</div>
+                        <div class="info-value" id="playing-score">0</div>
+                    </div>
+                </div>
+
+                <!-- Timer -->
+                <div class="timer-container">
+                    <div class="timer" id="game-timer">60</div>
+                </div>
+
+                <!-- Attempts -->
+                <div class="attempts-container">
+                    <div class="attempts-row">
+                        <span>Words Left:</span>
+                        <span id="attempts-left">3</span>
+                    </div>
+                </div>
+
+                <!-- Current Word Display -->
+                <div class="word-display">
+                    <div class="current-word" id="current-word">Select letters...</div>
+                    <div class="word-validation" id="word-validation"></div>
+                </div>
+
+                <!-- Boggle Grid -->
+                <div class="grid-container">
+                    <div class="letter-grid" id="letter-grid">
+                        <!-- 5x5 grid will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Game Actions -->
+                <div class="game-actions">
+                    <button id="submit-word" class="gb-button primary" disabled>Submit Word</button>
+                    <button id="clear-word" class="gb-button secondary">Clear</button>
+                    <button id="forfeit-round" class="gb-button btn-danger">Forfeit</button>
+                </div>
+
+                <!-- Active Power Cards -->
+                <div class="power-deck-section">
+                    <div class="deck-label">Active Powers</div>
+                    <div class="power-deck-container" id="active-powers">
+                        <!-- Active power cards -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shop Phase -->
+        <div id="shop-phase" class="game-phase hidden">
             <div class="shop-container">
                 <div class="shop-header">
-                    <h2>🛒 Power Shop</h2>
+                    <h2>Shop</h2>
                     <div class="shop-info">
-                        <span>💰 Coins: <span id="shopCoinsDisplay">100</span></span>
-                        <button id="refreshShopBtn" class="gb-button secondary">🔄 Refresh (50)</button>
+                        <div class="stats-row">
+                            <span>Money:</span>
+                            <span id="shop-money">10</span>
+                        </div>
+                        <div class="stats-row">
+                            <span>Round Complete:</span>
+                            <span id="shop-round-status">1/3</span>
+                        </div>
                     </div>
                 </div>
-                
+
                 <!-- Power Cards Section -->
                 <div class="shop-section">
-                    <h3>🔹 Power Cards</h3>
-                    <div id="shopCardsContainer" class="shop-cards-container">
-                        <!-- Shop cards will be loaded here -->
+                    <h3>Power Cards</h3>
+                    <div class="shop-cards-container" id="shop-cards">
+                        <!-- Shop cards will be inserted here -->
                     </div>
                 </div>
-                
+
                 <!-- Upgrades Section -->
                 <div class="shop-section">
-                    <h3>🛠️ Upgrades</h3>
-                    <div id="shopUpgradesContainer" class="shop-upgrades-container">
-                        <!-- Upgrade options will be loaded here -->
+                    <h3>Upgrades</h3>
+                    <div class="shop-upgrades-container" id="shop-upgrades">
+                        <!-- Upgrades will be inserted here -->
                     </div>
                 </div>
-                
-                <!-- Packs Section -->
+
+                <!-- Booster Packs Section -->
                 <div class="shop-section">
-                    <h3>🎴 Packs</h3>
-                    <div id="shopPacksContainer" class="shop-packs-container">
-                        <!-- Pack options will be loaded here -->
+                    <h3>Booster Packs</h3>
+                    <div class="shop-packs-container" id="shop-packs">
+                        <!-- Packs will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="shop-actions">
+                    <button id="continue-adventure" class="gb-button primary">Continue</button>
+                    <button id="skip-shop" class="gb-button secondary">Skip Shop</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Phase -->
+        <div id="game-over-phase" class="game-phase hidden">
+            <div class="game-over-container">
+                <h2>Game Over</h2>
+                <div class="final-stats">
+                    <div class="stats-row">
+                        <span>Final Score:</span>
+                        <span id="final-score">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span>Antes Completed:</span>
+                        <span id="antes-completed">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span>Best Word:</span>
+                        <span id="best-word">-</span>
                     </div>
                 </div>
                 
-                <div class="shop-actions">
-                    <button id="continueBtn" class="gb-button primary">Continue to Next Round</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- GAME OVER PHASE -->
-        <div id="gameOverPhase" class="game-phase hidden">
-            <div class="game-over-container">
-                <h2>💀 Game Over</h2>
-                <div class="final-stats">
-                    <div>Final Score: <span id="finalScore">0</span></div>
-                    <div>Words Found: <span id="finalWords">0</span></div>
-                    <div>Rounds Completed: <span id="finalRounds">0</span></div>
-                </div>
                 <div class="game-over-actions">
-                    <button id="restartBtn" class="gb-button primary">New Run</button>
-                    <button id="menuBtn" class="gb-button secondary">Main Menu</button>
+                    <button id="play-again" class="gb-button primary">Play Again</button>
+                    <button id="back-to-menu-over" class="gb-button secondary">Main Menu</button>
                 </div>
             </div>
         </div>
-        
-        <!-- VICTORY PHASE -->
-        <div id="victoryPhase" class="game-phase hidden">
+
+        <!-- Victory Phase -->
+        <div id="victory-phase" class="game-phase hidden">
             <div class="victory-container">
-                <h2>🏆 Victory!</h2>
+                <h2>Victory!</h2>
+                <p>You've conquered all 8 Antes!</p>
+                
                 <div class="victory-stats">
-                    <div>You conquered all 8 Antes!</div>
-                    <div>Total Score: <span id="victoryScore">0</span></div>
-                    <div>Total Words: <span id="victoryWords">0</span></div>
+                    <div class="stats-row">
+                        <span>Final Score:</span>
+                        <span id="victory-score">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span>Total Money:</span>
+                        <span id="victory-money">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span>Cards Collected:</span>
+                        <span id="cards-collected">0</span>
+                    </div>
                 </div>
+                
                 <div class="victory-actions">
-                    <button id="newRunBtn" class="gb-button primary">New Run</button>
-                    <button id="victoryMenuBtn" class="gb-button secondary">Main Menu</button>
+                    <button id="new-game-plus" class="gb-button primary">New Game+</button>
+                    <button id="back-to-menu-victory" class="gb-button secondary">Main Menu</button>
                 </div>
             </div>
         </div>
-        
-        <!-- Messages -->
-        <div id="messageContainer" class="message-container"></div>
-        
-        <!-- Power Card Effect Animations -->
-        <div id="effectsContainer" class="effects-container"></div>
     </div>
-    
-    <!-- Scripts -->
-    <script src="/static/js/game.js"></script>
-    
-    <!-- PWA Registration -->
-    <script>
-        // Register service worker for PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => console.log('SW registered'))
-                    .catch(error => console.log('SW registration failed'));
-            });
-        }
-    </script>
+
+    <!-- Effects Container for Animations -->
+    <div class="effects-container" id="effects-container"></div>
+
+    <!-- Message Container for Notifications -->
+    <div class="message-container" id="message-container"></div>
+
+    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
 </body>
 </html> 

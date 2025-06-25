@@ -1,4 +1,6 @@
 // Word Scramble Master - Roguelike Deckbuilder
+// Updated for pixel-art, mobile-optimized UI and new HTML structure
+
 let gameState = {};
 let timer = null;
 let selectedCells = [];
@@ -8,50 +10,67 @@ let currentWord = '';
 // DOM Elements
 const elements = {
     // Phases
-    menuPhase: document.getElementById('menuPhase'),
-    challengeSelectPhase: document.getElementById('challengeSelectPhase'),
-    playingPhase: document.getElementById('playingPhase'),
-    shopPhase: document.getElementById('shopPhase'),
-    gameOverPhase: document.getElementById('gameOverPhase'),
-    victoryPhase: document.getElementById('victoryPhase'),
+    menuPhase: document.getElementById('menu-phase'),
+    challengeSelectPhase: document.getElementById('challenge-phase'),
+    playingPhase: document.getElementById('playing-phase'),
+    shopPhase: document.getElementById('shop-phase'),
+    gameOverPhase: document.getElementById('game-over-phase'),
+    victoryPhase: document.getElementById('victory-phase'),
     
     // Menu
-    newGameBtn: document.getElementById('newGameBtn'),
-    continueBtn: document.getElementById('continueBtn'),
-    settingsBtn: document.getElementById('settingsBtn'),
+    startGameBtn: document.getElementById('start-game'),
+    viewStatsBtn: document.getElementById('view-stats'),
+    settingsBtn: document.getElementById('settings'),
+    bestScore: document.getElementById('best-score'),
+    gamesWon: document.getElementById('games-won'),
     
     // Challenge Select
-    anteDisplay: document.getElementById('anteDisplay'),
-    roundDisplay: document.getElementById('roundDisplay'),
-    goalScore: document.getElementById('goalScore'),
-    timeLimit: document.getElementById('timeLimit'),
-    attemptsLimit: document.getElementById('attemptsLimit'),
-    coinReward: document.getElementById('coinReward'),
-    startChallengeBtn: document.getElementById('startChallengeBtn'),
+    currentAnte: document.getElementById('current-ante'),
+    currentRound: document.getElementById('current-round'),
+    gameScore: document.getElementById('game-score'),
+    playerMoney: document.getElementById('player-money'),
+    powerDeck: document.getElementById('power-deck'),
+    startRoundBtn: document.getElementById('start-round'),
+    backToMenuBtn: document.getElementById('back-to-menu'),
     
     // Playing Phase
-    coinsDisplay: document.getElementById('coinsDisplay'),
-    scoreDisplay: document.getElementById('scoreDisplay'),
-    targetDisplay: document.getElementById('targetDisplay'),
-    timerDisplay: document.getElementById('timerDisplay'),
-    wordsRemainingDisplay: document.getElementById('wordsRemainingDisplay'),
-    powerDeckContainer: document.getElementById('powerDeckContainer'),
-    letterGrid: document.getElementById('letterGrid'),
-    currentWordDisplay: document.getElementById('currentWord'),
-    wordValidation: document.getElementById('wordValidation'),
-    shuffleBtn: document.getElementById('shuffleBtn'),
+    playingAnte: document.getElementById('playing-ante'),
+    playingRound: document.getElementById('playing-round'),
+    playingScore: document.getElementById('playing-score'),
+    gameTimer: document.getElementById('game-timer'),
+    attemptsLeft: document.getElementById('attempts-left'),
+    currentWordDisplay: document.getElementById('current-word'),
+    wordValidation: document.getElementById('word-validation'),
+    letterGrid: document.getElementById('letter-grid'),
+    submitWordBtn: document.getElementById('submit-word'),
+    clearWordBtn: document.getElementById('clear-word'),
+    forfeitRoundBtn: document.getElementById('forfeit-round'),
+    activePowers: document.getElementById('active-powers'),
     
     // Shop
-    shopCoinsDisplay: document.getElementById('shopCoinsDisplay'),
-    shopCardsContainer: document.getElementById('shopCardsContainer'),
-    shopUpgradesContainer: document.getElementById('shopUpgradesContainer'),
-    shopPacksContainer: document.getElementById('shopPacksContainer'),
-    refreshShopBtn: document.getElementById('refreshShopBtn'),
-    continueShopBtn: document.querySelector('#shopPhase #continueBtn'),
+    shopMoney: document.getElementById('shop-money'),
+    shopRoundStatus: document.getElementById('shop-round-status'),
+    shopCards: document.getElementById('shop-cards'),
+    shopUpgrades: document.getElementById('shop-upgrades'),
+    shopPacks: document.getElementById('shop-packs'),
+    continueAdventureBtn: document.getElementById('continue-adventure'),
+    skipShopBtn: document.getElementById('skip-shop'),
     
-    // Messages
-    messageContainer: document.getElementById('messageContainer'),
-    effectsContainer: document.getElementById('effectsContainer')
+    // Game Over / Victory
+    finalScore: document.getElementById('final-score'),
+    antesCompleted: document.getElementById('antes-completed'),
+    bestWord: document.getElementById('best-word'),
+    playAgainBtn: document.getElementById('play-again'),
+    backToMenuOverBtn: document.getElementById('back-to-menu-over'),
+    victoryScore: document.getElementById('victory-score'),
+    victoryMoney: document.getElementById('victory-money'),
+    cardsCollected: document.getElementById('cards-collected'),
+    newGamePlusBtn: document.getElementById('new-game-plus'),
+    backToMenuVictoryBtn: document.getElementById('back-to-menu-victory'),
+    
+    // Messages & Effects
+    messageContainer: document.getElementById('message-container'),
+    effectsContainer: document.getElementById('effects-container')
 };
 
 // Initialize Game
@@ -66,13 +85,29 @@ function initializeGame() {
 }
 
 function setupEventListeners() {
-    // Menu buttons
-    elements.newGameBtn.addEventListener('click', startNewGame);
-    elements.startChallengeBtn.addEventListener('click', startChallenge);
-    elements.shuffleBtn.addEventListener('click', shuffleGrid);
-    elements.continueShopBtn.addEventListener('click', continueToNextRound);
+    // Menu
+    if (elements.startGameBtn) elements.startGameBtn.addEventListener('click', startNewGame);
+    if (elements.viewStatsBtn) elements.viewStatsBtn.addEventListener('click', showStats);
+    if (elements.settingsBtn) elements.settingsBtn.addEventListener('click', showSettings);
     
-    // Grid interaction (will be set when grid is rendered)
+    // Challenge
+    if (elements.startRoundBtn) elements.startRoundBtn.addEventListener('click', startChallenge);
+    if (elements.backToMenuBtn) elements.backToMenuBtn.addEventListener('click', () => showPhase('menu'));
+    
+    // Playing
+    if (elements.submitWordBtn) elements.submitWordBtn.addEventListener('click', submitWord);
+    if (elements.clearWordBtn) elements.clearWordBtn.addEventListener('click', clearSelection);
+    if (elements.forfeitRoundBtn) elements.forfeitRoundBtn.addEventListener('click', forfeitRound);
+    
+    // Shop
+    if (elements.continueAdventureBtn) elements.continueAdventureBtn.addEventListener('click', continueToNextRound);
+    if (elements.skipShopBtn) elements.skipShopBtn.addEventListener('click', continueToNextRound);
+    
+    // Game Over / Victory
+    if (elements.playAgainBtn) elements.playAgainBtn.addEventListener('click', startNewGame);
+    if (elements.backToMenuOverBtn) elements.backToMenuOverBtn.addEventListener('click', () => showPhase('menu'));
+    if (elements.newGamePlusBtn) elements.newGamePlusBtn.addEventListener('click', startNewGame);
+    if (elements.backToMenuVictoryBtn) elements.backToMenuVictoryBtn.addEventListener('click', () => showPhase('menu'));
 }
 
 function loadGameState() {
@@ -150,23 +185,37 @@ function showPhase(phase) {
     if (phase === 'shop') {
         loadShopItems();
     }
+    
+    // Update stats for end screens
+    if (phase === 'game_over') updateGameOverStats();
+    if (phase === 'victory') updateVictoryStats();
 }
 
 function updateDisplay() {
     if (!gameState) return;
     
-    // Update common displays
-    if (elements.coinsDisplay) elements.coinsDisplay.textContent = gameState.coins || 0;
-    if (elements.scoreDisplay) elements.scoreDisplay.textContent = gameState.score || 0;
-    if (elements.targetDisplay) elements.targetDisplay.textContent = gameState.goal_score || 0;
-    if (elements.wordsRemainingDisplay) elements.wordsRemainingDisplay.textContent = gameState.words_remaining || 0;
+    // Menu displays
+    if (elements.bestScore) elements.bestScore.textContent = gameState.best_score || 0;
+    if (elements.gamesWon) elements.gamesWon.textContent = gameState.games_won || 0;
     
-    // Update challenge select displays
-    if (elements.anteDisplay) elements.anteDisplay.textContent = `Ante ${gameState.ante || 1}`;
-    if (elements.roundDisplay) elements.roundDisplay.textContent = `Round ${gameState.round || 1}`;
-    if (elements.goalScore) elements.goalScore.textContent = gameState.goal_score || 300;
-    if (elements.timeLimit) elements.timeLimit.textContent = gameState.time_remaining || 120;
-    if (elements.attemptsLimit) elements.attemptsLimit.textContent = gameState.words_remaining || 3;
+    // Challenge select displays
+    if (elements.currentAnte) elements.currentAnte.textContent = gameState.ante || 1;
+    if (elements.currentRound) elements.currentRound.textContent = `${gameState.round || 1}/3`;
+    if (elements.gameScore) elements.gameScore.textContent = gameState.score || 0;
+    if (elements.playerMoney) elements.playerMoney.textContent = gameState.coins || 10;
+    
+    // Playing phase displays
+    if (elements.playingAnte) elements.playingAnte.textContent = gameState.ante || 1;
+    if (elements.playingRound) elements.playingRound.textContent = `${gameState.round || 1}/3`;
+    if (elements.playingScore) elements.playingScore.textContent = gameState.score || 0;
+    if (elements.attemptsLeft) elements.attemptsLeft.textContent = gameState.words_remaining || 3;
+    
+    // Shop displays
+    if (elements.shopMoney) elements.shopMoney.textContent = gameState.coins || 0;
+    if (elements.shopRoundStatus) elements.shopRoundStatus.textContent = `${gameState.round || 1}/3`;
+    
+    // Update power deck
+    renderPowerDeck();
     
     // Update shop display
     if (elements.shopCoinsDisplay) elements.shopCoinsDisplay.textContent = gameState.coins || 0;
@@ -208,20 +257,62 @@ function renderGrid() {
 }
 
 function renderPowerDeck() {
-    if (!gameState.power_deck || !elements.powerDeckContainer) return;
+    if (!gameState.power_deck) return;
     
-    elements.powerDeckContainer.innerHTML = '';
+    // Render in challenge select phase
+    if (elements.powerDeck) {
+        elements.powerDeck.innerHTML = '';
+        gameState.power_deck.forEach(card => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'power-card';
+            cardElement.innerHTML = `
+                <div class="power-card-icon">${card.icon || '⚡'}</div>
+                <div class="power-card-name">${card.name}</div>
+                <div class="power-card-description">${card.description}</div>
+                <div class="power-card-level">Lv.${card.level || 1}</div>
+            `;
+            elements.powerDeck.appendChild(cardElement);
+        });
+    }
     
-    gameState.power_deck.forEach(card => {
-        const cardElement = document.createElement('div');
-        cardElement.className = 'power-card';
-        cardElement.innerHTML = `
-            <div class="power-card-icon">${card.icon}</div>
-            <div class="power-card-name">${card.name}</div>
-            <div class="power-card-description">${card.description}</div>
-        `;
-        elements.powerDeckContainer.appendChild(cardElement);
-    });
+    // Render in playing phase
+    if (elements.activePowers) {
+        elements.activePowers.innerHTML = '';
+        gameState.power_deck.forEach(card => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'power-card';
+            cardElement.innerHTML = `
+                <div class="power-card-icon">${card.icon || '⚡'}</div>
+                <div class="power-card-name">${card.name}</div>
+                <div class="power-card-description">${card.description}</div>
+                <div class="power-card-level">Lv.${card.level || 1}</div>
+            `;
+            elements.activePowers.appendChild(cardElement);
+        });
+    }
+}
+
+function showStats() {
+    showMessage('Stats feature coming soon!', 'info');
+}
+
+function showSettings() {
+    showMessage('Settings feature coming soon!', 'info');
+}
+
+function forfeitRound() {
+    if (confirm('Are you sure you want to forfeit this round?')) {
+        fetch('/api/forfeit_round', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    gameState = data.game_state;
+                    showPhase('game_over');
+                    updateDisplay();
+                }
+            })
+            .catch(error => console.error('Error forfeiting round:', error));
+    }
 }
 
 function handleCellStart(e, row, col) {
@@ -288,15 +379,24 @@ function updateWordDisplay() {
         gameState.grid[cell.row][cell.col]
     ).join('');
     
-    elements.currentWordDisplay.textContent = currentWord || 'TAP LETTERS TO SPELL';
+    if (elements.currentWordDisplay) {
+        elements.currentWordDisplay.textContent = currentWord || 'Select letters...';
+    }
     
     // Update validation display
-    if (currentWord.length >= 2) {
-        elements.wordValidation.textContent = 'Checking...';
-        elements.wordValidation.className = 'word-validation checking';
-    } else {
-        elements.wordValidation.textContent = '';
-        elements.wordValidation.className = 'word-validation';
+    if (elements.wordValidation) {
+        if (currentWord.length >= 2) {
+            elements.wordValidation.textContent = 'Checking...';
+            elements.wordValidation.className = 'word-validation checking';
+        } else {
+            elements.wordValidation.textContent = '';
+            elements.wordValidation.className = 'word-validation';
+        }
+    }
+    
+    // Enable/disable submit button
+    if (elements.submitWordBtn) {
+        elements.submitWordBtn.disabled = currentWord.length < 2;
     }
 }
 
@@ -377,13 +477,15 @@ function startTimer() {
     timer = setInterval(() => {
         if (gameState.time_remaining > 0) {
             gameState.time_remaining--;
-            elements.timerDisplay.textContent = gameState.time_remaining;
-            
-            // Timer warning colors
-            if (gameState.time_remaining <= 10) {
-                elements.timerDisplay.style.color = '#ff0000';
-            } else if (gameState.time_remaining <= 30) {
-                elements.timerDisplay.style.color = '#ff6600';
+            if (elements.gameTimer) {
+                elements.gameTimer.textContent = gameState.time_remaining;
+                
+                // Timer warning colors and classes
+                if (gameState.time_remaining <= 10) {
+                    elements.gameTimer.classList.add('warning');
+                } else {
+                    elements.gameTimer.classList.remove('warning');
+                }
             }
         } else {
             clearInterval(timer);
@@ -424,7 +526,8 @@ function loadShopItems() {
 }
 
 function renderShopCards(cards) {
-    elements.shopCardsContainer.innerHTML = '';
+    if (!elements.shopCards) return;
+    elements.shopCards.innerHTML = '';
     
     cards.forEach(card => {
         const cardElement = document.createElement('div');
@@ -449,15 +552,16 @@ function renderShopCards(cards) {
             cardElement.querySelector('.purchase-btn').addEventListener('click', () => purchaseItem(card));
         }
         
-        elements.shopCardsContainer.appendChild(cardElement);
+        elements.shopCards.appendChild(cardElement);
     });
 }
 
 function renderShopUpgrades(upgrades) {
-    elements.shopUpgradesContainer.innerHTML = '';
+    if (!elements.shopUpgrades) return;
+    elements.shopUpgrades.innerHTML = '';
     
     if (upgrades.length === 0) {
-        elements.shopUpgradesContainer.innerHTML = '<div class="no-upgrades">No upgrades available</div>';
+        elements.shopUpgrades.innerHTML = '<div class="no-upgrades">No upgrades available</div>';
         return;
     }
     
@@ -483,12 +587,13 @@ function renderShopUpgrades(upgrades) {
             upgradeElement.querySelector('.upgrade-btn').addEventListener('click', () => purchaseItem(upgrade));
         }
         
-        elements.shopUpgradesContainer.appendChild(upgradeElement);
+        elements.shopUpgrades.appendChild(upgradeElement);
     });
 }
 
 function renderShopPacks(packs) {
-    elements.shopPacksContainer.innerHTML = '';
+    if (!elements.shopPacks) return;
+    elements.shopPacks.innerHTML = '';
     
     packs.forEach(pack => {
         const packElement = document.createElement('div');
@@ -512,7 +617,7 @@ function renderShopPacks(packs) {
             packElement.querySelector('.pack-btn').addEventListener('click', () => purchaseItem(pack));
         }
         
-        elements.shopPacksContainer.appendChild(packElement);
+        elements.shopPacks.appendChild(packElement);
     });
 }
 
@@ -587,4 +692,15 @@ function showMessage(text, type = 'info') {
     setTimeout(() => {
         message.remove();
     }, 3000);
+}
+
+function updateGameOverStats() {
+    if (elements.finalScore) elements.finalScore.textContent = gameState.run_stats?.total_score || 0;
+    if (elements.finalWords) elements.finalWords.textContent = gameState.run_stats?.total_words || 0;
+    if (elements.finalRounds) elements.finalRounds.textContent = gameState.run_stats?.rounds_completed || (gameState.ante - 1) * 3 + (gameState.round - 1);
+}
+
+function updateVictoryStats() {
+    if (elements.victoryScore) elements.victoryScore.textContent = gameState.run_stats?.total_score || 0;
+    if (elements.victoryWords) elements.victoryWords.textContent = gameState.run_stats?.total_words || 0;
 } 
