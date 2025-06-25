@@ -201,6 +201,7 @@ def init_game_state():
         'goal_score': 100,  # More achievable goal
         'coins': 100,
         'power_deck': [],  # Start with no power cards
+        'effect_cards': [],  # One-time use effect cards
         'grid': generate_boggle_grid(),
         'time_remaining': 120,
 
@@ -431,6 +432,48 @@ def get_shop_items():
                 'icon': '✨',
                 'cost': 80
             }
+        ],
+        'effect_cards': [
+            {
+                'id': 'time_freeze',
+                'name': 'Time Freeze',
+                'description': 'Pause timer for 10 seconds',
+                'icon': '⏸️',
+                'cost': 30,
+                'type': 'effect'
+            },
+            {
+                'id': 'shuffle_board',
+                'name': 'Shuffle Board',
+                'description': 'Randomize all letters',
+                'icon': '🔀',
+                'cost': 25,
+                'type': 'effect'
+            },
+            {
+                'id': 'combo_letters',
+                'name': 'Combo Letters',
+                'description': 'Add 3 high-value letters',
+                'icon': '💎',
+                'cost': 40,
+                'type': 'effect'
+            },
+            {
+                'id': 'word_highlight',
+                'name': 'Word Highlight',
+                'description': 'Highlight a valid 5+ letter word',
+                'icon': '💡',
+                'cost': 35,
+                'type': 'effect'
+            },
+            {
+                'id': 'double_points',
+                'name': 'Double Points',
+                'description': 'Next word scores double points',
+                'icon': '⚡',
+                'cost': 45,
+                'type': 'effect'
+            }
         ]
     })
 
@@ -450,7 +493,11 @@ def purchase_item():
                 item if card['id'] == item['parent_id'] else card
                 for card in game_state['power_deck']
             ]
+        elif item.get('type') == 'effect':
+            # Add to effect cards
+            game_state['effect_cards'].append(item)
         else:
+            # Add to power deck
             game_state['power_deck'].append(item)
         
         session['game_state'] = game_state

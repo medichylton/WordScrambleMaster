@@ -217,11 +217,14 @@ function updateDisplay() {
     // Update power deck
     renderPowerDeck();
     
+    // Update progress bar
+    updateProgressBar();
+    
+    // Update effect cards
+    renderEffectCards();
+    
     // Update shop display
     if (elements.shopCoinsDisplay) elements.shopCoinsDisplay.textContent = gameState.coins || 0;
-    
-    // Update power deck
-    renderPowerDeck();
 }
 
 function renderGrid() {
@@ -257,39 +260,99 @@ function renderGrid() {
 }
 
 function renderPowerDeck() {
-    if (!gameState.power_deck) return;
+    const maxSlots = 8; // Maximum power card slots
     
     // Render in challenge select phase
     if (elements.powerDeck) {
         elements.powerDeck.innerHTML = '';
-        gameState.power_deck.forEach(card => {
-            const cardElement = document.createElement('div');
-            cardElement.className = 'power-card';
-            cardElement.innerHTML = `
-                <div class="power-card-icon">${card.icon || '⚡'}</div>
-                <div class="power-card-name">${card.name}</div>
-                <div class="power-card-description">${card.description}</div>
-                <div class="power-card-level">Lv.${card.level || 1}</div>
-            `;
-            elements.powerDeck.appendChild(cardElement);
-        });
+        renderPowerCards(elements.powerDeck, maxSlots);
     }
     
     // Render in playing phase
     if (elements.activePowers) {
         elements.activePowers.innerHTML = '';
-        gameState.power_deck.forEach(card => {
-            const cardElement = document.createElement('div');
-            cardElement.className = 'power-card';
-            cardElement.innerHTML = `
-                <div class="power-card-icon">${card.icon || '⚡'}</div>
-                <div class="power-card-name">${card.name}</div>
-                <div class="power-card-description">${card.description}</div>
-                <div class="power-card-level">Lv.${card.level || 1}</div>
-            `;
-            elements.activePowers.appendChild(cardElement);
-        });
+        renderPowerCards(elements.activePowers, maxSlots);
     }
+}
+
+function renderPowerCards(container, maxSlots) {
+    const powerCards = gameState.power_deck || [];
+    
+    // Add actual power cards
+    powerCards.forEach(card => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'power-card';
+        cardElement.innerHTML = `
+            <div class="power-card-icon">${card.icon || '⚡'}</div>
+            <div class="power-card-name">${card.name}</div>
+        `;
+        container.appendChild(cardElement);
+    });
+    
+    // Add placeholders for empty slots
+    const emptySlots = maxSlots - powerCards.length;
+    for (let i = 0; i < emptySlots; i++) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'power-card-placeholder';
+        placeholder.innerHTML = `
+            <div style="font-size: 0.7rem; opacity: 0.4;">+</div>
+            <div style="font-size: 0.4rem;">Empty</div>
+        `;
+        container.appendChild(placeholder);
+    }
+}
+
+function renderEffectCards() {
+    const effectCardsContainer = document.getElementById('effect-cards');
+    if (!effectCardsContainer) return;
+    
+    const maxSlots = 6; // Maximum effect card slots
+    const effectCards = gameState.effect_cards || [];
+    
+    effectCardsContainer.innerHTML = '';
+    
+    // Add actual effect cards
+    effectCards.forEach(card => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'effect-card';
+        cardElement.innerHTML = `
+            <div class="effect-card-icon">${card.icon}</div>
+            <div class="effect-card-name">${card.name}</div>
+        `;
+        cardElement.addEventListener('click', () => useEffectCard(card));
+        effectCardsContainer.appendChild(cardElement);
+    });
+    
+    // Add placeholders for empty slots
+    const emptySlots = maxSlots - effectCards.length;
+    for (let i = 0; i < emptySlots; i++) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'effect-card-placeholder';
+        placeholder.innerHTML = `
+            <div style="font-size: 0.6rem; opacity: 0.4;">+</div>
+            <div style="font-size: 0.4rem;">Empty</div>
+        `;
+        effectCardsContainer.appendChild(placeholder);
+    }
+}
+
+function updateProgressBar() {
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    
+    if (!progressFill || !progressText) return;
+    
+    const currentScore = gameState.score || 0;
+    const goalScore = gameState.goal_score || 100;
+    const percentage = Math.min(100, (currentScore / goalScore) * 100);
+    
+    progressFill.style.width = `${percentage}%`;
+    progressText.textContent = `${currentScore} / ${goalScore}`;
+}
+
+function useEffectCard(card) {
+    // Placeholder for effect card usage
+    showMessage(`Used ${card.name}! (Feature coming soon)`, 'info');
 }
 
 function showStats() {
@@ -518,9 +581,43 @@ function loadShopItems() {
         .then(data => {
             renderShopCards(data.cards || []);
             renderShopUpgrades(data.upgrades || []);
+            renderShopEffectCards(data.effect_cards || []);
             renderShopPacks(data.packs || []);
         })
         .catch(error => console.error('Error loading shop:', error));
+}
+
+function renderShopEffectCards(effectCards) {
+    const container = document.getElementById('shop-effect-cards');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    effectCards.forEach(card => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'shop-card';
+        cardElement.innerHTML = `
+            <div class="shop-card-header">
+                <span class="shop-card-icon">${card.icon}</span>
+                <span class="shop-card-name">${card.name}</span>
+                <span class="shop-card-rarity common">One-Use</span>
+            </div>
+            <div class="shop-card-description">${card.description}</div>
+            <div class="shop-card-footer">
+                <span class="shop-card-cost">💰 ${card.cost}</span>
+                <button class="purchase-btn gb-button ${gameState.coins >= card.cost ? 'primary' : 'disabled'}" 
+                        ${gameState.coins >= card.cost ? '' : 'disabled'}>
+                    ${gameState.coins >= card.cost ? 'Buy' : 'Too Expensive'}
+                </button>
+            </div>
+        `;
+        
+        if (gameState.coins >= card.cost) {
+            cardElement.querySelector('.purchase-btn').addEventListener('click', () => purchaseItem(card));
+        }
+        
+        container.appendChild(cardElement);
+    });
 }
 
 function renderShopCards(cards) {
