@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Word Scramble Master</title>
+    <title>🏰 Word Dungeon Master</title>
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#9BBB0F">
+    <meta name="theme-color" content="#2a1810">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Word Scramble">
+    <meta name="apple-mobile-web-app-title" content="Word Dungeon">
     
     <!-- Manifest -->
     <link rel="manifest" href="/manifest.json">
@@ -20,109 +20,194 @@
     
     <!-- Styles -->
     <link rel="stylesheet" href="/static/css/style.css">
-    
-    <!-- Prevent zoom on input focus -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
 <body>
-    <!-- Game Container -->
-    <div id="gameContainer" class="game-container">
-        <!-- Header -->
-        <div class="header">
-            <div class="stats-row">
-                <div class="coins">
-                    <span id="coinsDisplay">🪙 15</span>
-                </div>
-                <div class="score">
-                    <span id="scoreDisplay">0</span>
-                </div>
-                <div class="level">
-                    <span id="levelDisplay">Lv.1</span>
-                </div>
-            </div>
+    <!-- Main Dungeon Container -->
+    <div class="dungeon-container">
+        <div class="dungeon-frame">
             
-            <div class="title">
-                <h1>Word Hunt</h1>
+            <!-- Game Header -->
+            <div class="game-header">
+                <div class="game-title">🏰 WORD DUNGEON</div>
+                <div class="stats-panel">
+                    <div class="stat-item">
+                        <div class="stat-icon">🪙</div>
+                        <span id="coinsDisplay">15</span>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">⭐</div>
+                        <span id="scoreDisplay">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">🏆</div>
+                        <span id="levelDisplay">Lv.1</span>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">⏰</div>
+                        <span id="timerDisplay">120</span>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <!-- Power Cards Section -->
-        <div class="power-cards-section">
-            <div class="power-cards-label">Power Cards</div>
-            <div id="powerCardsContainer" class="power-cards-container">
-                <!-- Power cards will be inserted here -->
+
+            <!-- Power Cards Section -->
+            <div class="power-cards-section">
+                <div class="power-cards-header">⚡ Power Cards</div>
+                <div id="powerCardsContainer" class="power-cards-container">
+                    <!-- Power cards will be inserted here -->
+                    <div class="power-card">
+                        <div class="emoji">🎲</div>
+                        <div class="name">Empty</div>
+                    </div>
+                    <div class="power-card">
+                        <div class="emoji">📜</div>
+                        <div class="name">Empty</div>
+                    </div>
+                    <div class="power-card">
+                        <div class="emoji">🗡️</div>
+                        <div class="name">Empty</div>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <!-- Letter Grid -->
-        <div class="grid-container">
-            <div id="letterGrid" class="letter-grid">
-                <!-- 4x4 grid will be generated here -->
+
+            <!-- Letter Grid -->
+            <div class="letter-grid-container">
+                <div id="letterGrid" class="letter-grid">
+                    <!-- 4x4 grid will be generated here -->
+                </div>
             </div>
-        </div>
-        
-        <!-- Current Word Display -->
-        <div class="word-display">
-            <div id="currentWord" class="current-word">TAP LETTERS TO SPELL</div>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <button id="submitBtn" class="gb-button primary">SUBMIT WORD</button>
-            <div class="button-row">
-                <button id="clearBtn" class="gb-button secondary">CLEAR</button>
-                <button id="shuffleBtn" class="gb-button secondary">⟲ 10🪙</button>
-                <button id="shopBtn" class="gb-button secondary">🛒 SHOP</button>
+
+            <!-- Current Word Display -->
+            <div class="word-display-container">
+                <div id="currentWord" class="current-word">TOUCH LETTERS TO SPELL</div>
             </div>
-        </div>
-        
-        <!-- Progress Bar -->
-        <div class="progress-container">
-            <div class="progress-bar">
-                <div id="progressFill" class="progress-fill"></div>
+
+            <!-- Progress Section -->
+            <div class="progress-section">
+                <div class="progress-bar-container">
+                    <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+                    <div id="progressText" class="progress-text">Target: 75 points</div>
+                </div>
             </div>
-            <div id="targetScore" class="target-score">Target: 75 points</div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button id="shuffleBtn" class="pixel-button secondary">🔄 Shuffle (10🪙)</button>
+                <button id="shopBtn" class="pixel-button primary">🛒 Power Shop</button>
+                <button id="menuBtn" class="pixel-button secondary">📋 Menu</button>
+            </div>
+
         </div>
-        
-        <!-- Messages -->
-        <div id="messageContainer" class="message-container"></div>
     </div>
-    
+
     <!-- Shop Modal -->
     <div id="shopModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>🛒 Power Shop</h2>
+                <div class="modal-title">🛒 Power Card Shop</div>
                 <button id="closeShop" class="close-button">✕</button>
+            </div>
+            <div class="shop-controls" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="color: var(--accent-gold); font-weight: bold;">💰 Coins: <span id="shopCoins">15</span></div>
+                <button id="refreshShop" class="pixel-button secondary">🔄 Refresh (50🪙)</button>
             </div>
             <div id="shopItems" class="shop-items">
                 <!-- Shop items will be loaded here -->
             </div>
+            <div style="text-align: center; margin-top: 16px;">
+                <button id="continueGame" class="pixel-button primary">Continue to Next Round</button>
+            </div>
         </div>
     </div>
-    
-    <!-- Level Complete Modal -->
-    <div id="levelCompleteModal" class="modal hidden">
+
+    <!-- Main Menu Modal -->
+    <div id="menuModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>🎉 Level Complete!</h2>
+                <div class="modal-title">🏰 Game Menu</div>
+                <button id="closeMenu" class="close-button">✕</button>
             </div>
-            <div class="level-complete-content">
-                <p>Congratulations! You've completed the level!</p>
-                <p>🪙 +20 coins bonus</p>
-                <button id="nextLevelBtn" class="gb-button primary">NEXT LEVEL</button>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin: 16px 0;">
+                <button id="newGameBtn" class="pixel-button primary">🆕 New Game</button>
+                <button id="resumeBtn" class="pixel-button secondary">▶️ Resume</button>
+                <button id="settingsBtn" class="pixel-button secondary">⚙️ Settings</button>
+                <button id="helpBtn" class="pixel-button secondary">❓ How to Play</button>
             </div>
         </div>
     </div>
-    
+
+    <!-- Challenge Select Modal -->
+    <div id="challengeModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">⚔️ Select Challenge</div>
+                <button id="closeChallenge" class="close-button">✕</button>
+            </div>
+            <div id="challengeList" style="margin: 16px 0;">
+                <!-- Challenge selection will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Round Complete Modal -->
+    <div id="roundCompleteModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🎉 Round Complete!</div>
+            </div>
+            <div class="round-complete-content" style="text-align: center; margin: 16px 0;">
+                <p id="roundScore" style="font-size: 18px; color: var(--accent-gold); font-weight: bold;">Score: 0</p>
+                <p id="roundReward" style="color: var(--accent-copper);">🪙 +20 coins bonus</p>
+                <div style="margin: 16px 0;">
+                    <button id="enterShop" class="pixel-button primary">🛒 Enter Shop</button>
+                    <button id="skipShop" class="pixel-button secondary">⏭️ Skip Shop</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">💀 Game Over</div>
+            </div>
+            <div class="game-over-content" style="text-align: center; margin: 16px 0;">
+                <p style="font-size: 16px; margin-bottom: 16px;">You didn't reach the target score!</p>
+                <p id="finalScore" style="font-size: 18px; color: var(--accent-gold); font-weight: bold;">Final Score: 0</p>
+                <div style="margin: 16px 0;">
+                    <button id="tryAgainBtn" class="pixel-button primary">🔄 Try Again</button>
+                    <button id="backToMenuBtn" class="pixel-button secondary">🏰 Main Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="victoryModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">👑 Victory!</div>
+            </div>
+            <div class="victory-content" style="text-align: center; margin: 16px 0;">
+                <p style="font-size: 18px; color: var(--accent-gold); margin-bottom: 16px;">🎉 Congratulations! You've conquered the Word Dungeon! 🎉</p>
+                <p id="victoryScore" style="font-size: 16px; font-weight: bold;">Final Score: 0</p>
+                <div style="margin: 16px 0;">
+                    <button id="playAgainBtn" class="pixel-button primary">🆕 New Adventure</button>
+                    <button id="menuFromVictory" class="pixel-button secondary">🏰 Main Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="messageContainer" class="message-container"></div>
+
     <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen">
-        <div class="loading-content">
-            <div class="loading-spinner">🎮</div>
-            <div>Loading Word Scramble...</div>
-        </div>
+    <div id="loadingScreen" class="loading-screen hidden">
+        <div class="loading-spinner">🏰</div>
+        <div style="color: var(--accent-gold); font-size: 16px; font-weight: bold;">Loading Word Dungeon...</div>
     </div>
-    
+
     <!-- Scripts -->
     <script src="/static/js/game.js"></script>
     
@@ -132,8 +217,8 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(registration => console.log('SW registered'))
-                    .catch(error => console.log('SW registration failed'));
+                    .then(registration => console.log('🏰 Service Worker registered'))
+                    .catch(error => console.log('❌ SW registration failed'));
             });
         }
         
@@ -145,8 +230,12 @@
             
             // Show install button
             const installBtn = document.createElement('button');
-            installBtn.textContent = '📱 Install App';
-            installBtn.className = 'install-button gb-button';
+            installBtn.textContent = '📱 Install Dungeon';
+            installBtn.className = 'pixel-button secondary';
+            installBtn.style.position = 'fixed';
+            installBtn.style.top = '10px';
+            installBtn.style.right = '10px';
+            installBtn.style.zIndex = '999';
             installBtn.onclick = () => {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
@@ -157,7 +246,7 @@
                 });
             };
             
-            document.querySelector('.header').appendChild(installBtn);
+            document.body.appendChild(installBtn);
         });
     </script>
 </body>

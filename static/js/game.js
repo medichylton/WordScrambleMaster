@@ -23,8 +23,7 @@ const elements = {
     powerCardsContainer: document.getElementById('powerCardsContainer'),
     letterGrid: document.getElementById('letterGrid'),
     currentWordDisplay: document.getElementById('currentWord'),
-    submitBtn: document.getElementById('submitBtn'),
-    clearBtn: document.getElementById('clearBtn'),
+
     shuffleBtn: document.getElementById('shuffleBtn'),
     shopBtn: document.getElementById('shopBtn'),
     progressFill: document.getElementById('progressFill'),
@@ -206,6 +205,13 @@ function handleTouchEnd(e) {
     e.preventDefault();
     isSelecting = false;
     touchStartPos = null;
+    
+    // Auto-submit word if it's valid (2+ letters)
+    if (currentWord.length >= 2) {
+        submitWord();
+    } else {
+        clearSelection();
+    }
 }
 
 function handleCellMouseDown(e) {
@@ -224,6 +230,13 @@ function handleCellMouseEnter(e) {
 function handleMouseUp(e) {
     isMouseDown = false;
     isSelecting = false;
+    
+    // Auto-submit word if it's valid (2+ letters)
+    if (currentWord.length >= 2) {
+        submitWord();
+    } else {
+        clearSelection();
+    }
 }
 
 function startSelection(cell) {
