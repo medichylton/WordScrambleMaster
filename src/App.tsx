@@ -15,10 +15,10 @@ function AppContent() {
     testDictionaryAPI().then(result => {
       // Only log in development mode
       if (process.env.NODE_ENV === 'development') {
-        if (result.success) {
-          console.log('✅ Dictionary API test passed:', result.message);
-        } else {
-          console.warn('❌ Dictionary API test failed:', result.message);
+      if (result.success) {
+        console.log('✅ Dictionary API test passed:', result.message);
+      } else {
+        console.warn('❌ Dictionary API test failed:', result.message);
         }
       }
     });
@@ -80,9 +80,9 @@ function App() {
   return (
     <div className="crt-screen">
       <SettingsProvider>
-        <GameProvider>
-          <AppContent />
-        </GameProvider>
+      <GameProvider>
+        <AppContent />
+      </GameProvider>
       </SettingsProvider>
     </div>
   );

@@ -1,266 +1,242 @@
-from flask import Flask, render_template, request, jsonify, session
-import json
-import random
+from flask import Flask, request, jsonify, session, render_template
 import os
+import random
+import string
+import json
+import requests
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'word-scramble-secret-key-2024')
+app.secret_key = 'your-secret-key-change-this'
 
-# Power Card Templates
+# WORD DICTIONARY API
+def validate_word_api(word):
+    """Validate word using dictionary API"""
+    try:
+        # Using Free Dictionary API
+        response = requests.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word.lower()}", timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                'valid': True,
+                'definition': data[0]['meanings'][0]['definitions'][0]['definition'] if data else '',
+                'phonetic': data[0]['phonetic'] if data and 'phonetic' in data[0] else ''
+            }
+        return {'valid': False, 'definition': '', 'phonetic': ''}
+    except:
+        # Fallback validation for basic words
+        basic_words = {
+            'cat', 'dog', 'run', 'jump', 'play', 'game', 'word', 'test', 'code',
+            'help', 'work', 'time', 'life', 'love', 'home', 'good', 'best', 'new'
+        }
+        return {'valid': word.lower() in basic_words, 'definition': '', 'phonetic': ''}
+
+# POWER CARD SYSTEM WITH UPGRADE TREES
 POWER_CARDS = [
-    # COMMON CARDS (15-20 coins)
     {
-        'name': 'Letter Alchemy',
-        'description': 'Rare letters (J,Q,X,Z) add +50 points each',
-        'effect_type': 'rareLetterBonus',
-        'value': 50,
-        'emoji': '🔮',
-        'rarity': 'common',
-        'base_cost': 15
+        "id": "wildcard",
+        "name": "Wildcard",
+        "rarity": "Common",
+        "description": "Replace one grid letter with any letter",
+        "icon": "🃏",
+        "cost": 40,
+        "effect_type": "grid_modifier",
+        "value": 1,
+        "upgrades": [
+            {
+                "id": "double_wildcard",
+                "name": "Double Wildcard", 
+                "rarity": "Uncommon",
+                "description": "Replace two grid letters instead of one",
+                "icon": "🃏🃏",
+                "cost": 90,
+                "effect_type": "grid_modifier",
+                "value": 2,
+                "prerequisites": ["Use 'Wildcard' in 3 rounds"]
+            },
+            {
+                "id": "tactical_substitution",
+                "name": "Tactical Substitution",
+                "rarity": "Rare", 
+                "description": "Choose a wildcard letter to add at start of each round",
+                "icon": "🎯",
+                "cost": 120,
+                "effect_type": "grid_modifier",
+                "value": 1,
+                "prerequisites": ["Own 2 vowel synergy cards"]
+            }
+        ]
     },
     {
-        'name': 'Coin Storm',
-        'description': 'Each word gives +5 coins + length bonus',
-        'effect_type': 'coinMultiplier',
-        'value': 2.0,
-        'emoji': '💰',
-        'rarity': 'common',
-        'base_cost': 18
+        "id": "vowel_surge",
+        "name": "Vowel Surge",
+        "rarity": "Common",
+        "description": "+2 points per vowel used",
+        "icon": "🔤",
+        "cost": 50,
+        "effect_type": "vowel_bonus",
+        "value": 2,
+        "upgrades": [
+            {
+                "id": "vowel_frenzy",
+                "name": "Vowel Frenzy",
+                "rarity": "Uncommon",
+                "description": "+3 per vowel; triggers twice if 3+ vowels used",
+                "icon": "🌊",
+                "cost": 100,
+                "effect_type": "vowel_bonus",
+                "value": 3,
+                "prerequisites": ["Form 3 words with 4+ vowels"]
+            }
+        ]
     },
     {
-        'name': 'Time Warp',
-        'description': 'Adds 45 seconds + freezes time for first 10 words',
-        'effect_type': 'timeExtender',
-        'value': 45,
-        'emoji': '⏰',
-        'rarity': 'common',
-        'base_cost': 20
-    },
-    
-    # UNCOMMON CARDS (25-40 coins)
-    {
-        'name': 'Perfect Storm',
-        'description': 'Short words (3-4 letters) score 3x',
-        'effect_type': 'shortWordMultiplier',
-        'value': 3.0,
-        'max_length': 4,
-        'emoji': '🌪️',
-        'rarity': 'uncommon',
-        'base_cost': 25
-    },
-    {
-        'name': 'Vowel Crusher',
-        'description': 'Each vowel adds +25 points + 3x multiplier',
-        'effect_type': 'vowelBonus',
-        'value': 3.0,
-        'emoji': '🎯',
-        'rarity': 'uncommon',
-        'base_cost': 30
+        "id": "echo_chamber", 
+        "name": "Echo Chamber",
+        "rarity": "Common",
+        "description": "Repeated letters from last round give +5 bonus",
+        "icon": "🔄",
+        "cost": 50,
+        "effect_type": "repeat_bonus",
+        "value": 5,
+        "upgrades": [
+            {
+                "id": "echo_loop",
+                "name": "Echo Loop",
+                "rarity": "Uncommon", 
+                "description": "Repeated syllables also count; +10 bonus if >2 matches",
+                "icon": "🔁",
+                "cost": 90,
+                "effect_type": "repeat_bonus",
+                "value": 10,
+                "prerequisites": ["Repeat letters in 2 consecutive rounds"]
+            }
+        ]
     },
     {
-        'name': 'Chain Lightning',
-        'description': 'Each consecutive word: 1st=+50%, 2nd=+100%, 3rd=+200%',
-        'effect_type': 'chainMultiplier',
-        'value': 1.5,
-        'emoji': '⛓️',
-        'rarity': 'uncommon',
-        'base_cost': 35
+        "id": "letter_leech",
+        "name": "Letter Leech",
+        "rarity": "Common",
+        "description": "Lock one letter into the next grid",
+        "icon": "🔒",
+        "cost": 50,
+        "effect_type": "grid_persistence",
+        "value": 1
     },
     {
-        'name': 'Golden Touch',
-        'description': '40% chance for 3x score multiplier',
-        'effect_type': 'goldenLetters',
-        'value': 3.0,
-        'chance': 0.4,
-        'emoji': '✨',
-        'rarity': 'uncommon',
-        'base_cost': 40
-    },
-    
-    # RARE CARDS (50-80 coins)
-    {
-        'name': 'Word Mirage',
-        'description': '35% chance to score the word TWICE',
-        'effect_type': 'wordEcho',
-        'chance': 0.35,
-        'emoji': '🔄',
-        'rarity': 'rare',
-        'base_cost': 50
+        "id": "anagram_amplifier",
+        "name": "Anagram Amplifier", 
+        "rarity": "Uncommon",
+        "description": "Bonus for playing two or more anagrams in a round",
+        "icon": "🔀",
+        "cost": 80,
+        "effect_type": "anagram_bonus",
+        "value": 25
     },
     {
-        'name': 'Word Titan',
-        'description': '6+ letter words score 4x points',
-        'effect_type': 'longWordMultiplier',
-        'value': 4.0,
-        'min_length': 6,
-        'emoji': '📚',
-        'rarity': 'rare',
-        'base_cost': 65
+        "id": "time_freeze",
+        "name": "Time Freeze",
+        "rarity": "Rare",
+        "description": "Pause timer for 10 seconds once per round",
+        "icon": "⏸️",
+        "cost": 120,
+        "effect_type": "time_modifier",
+        "value": 10
     },
     {
-        'name': 'Score Doubler',
-        'description': 'ALL word scores multiplied by 2.5x',
-        'effect_type': 'letterMultiplier',
-        'value': 2.5,
-        'emoji': '⚡',
-        'rarity': 'rare',
-        'base_cost': 75
-    },
-    
-    # LEGENDARY CARDS (100+ coins)
-    {
-        'name': 'Score Avalanche',
-        'description': 'Every 3rd word scored gets 5x multiplier',
-        'effect_type': 'avalancheBonus',
-        'interval': 3,
-        'value': 5.0,
-        'emoji': '🏔️',
-        'rarity': 'legendary',
-        'base_cost': 100
-    },
-    {
-        'name': 'Word God',
-        'description': 'ALL words get +100 base points before multipliers',
-        'effect_type': 'baseScoreBonus',
-        'value': 100,
-        'emoji': '👑',
-        'rarity': 'legendary',
-        'base_cost': 150
+        "id": "word_multiplier",
+        "name": "Word Multiplier",
+        "rarity": "Rare", 
+        "description": "Double score of longest word each round",
+        "icon": "✖️",
+        "cost": 150,
+        "effect_type": "score_multiplier",
+        "value": 2
     }
 ]
 
 def init_game_state():
-    """Initialize a new game state"""
+    """Initialize new game state"""
+    starter_deck = random.sample([card for card in POWER_CARDS if card['rarity'] == 'Common'], 3)
+    
     return {
-        'level': 1,
+        'game_phase': 'menu',  # menu, challenge_select, playing, shop, game_over, victory
+        'ante': 1,
+        'round': 1,
         'score': 0,
-        'coins': 15,
-        'target_score': 75,
-        'words_found': [],
-        'inventory': [],
-        'grid': generate_grid(),
-        'word_count': 0,
-        'time_remaining': 120
+        'goal_score': 300,
+        'coins': 100,
+        'power_deck': starter_deck,
+        'grid': generate_boggle_grid(),
+        'time_remaining': 120,
+        'words_remaining': 3,
+        'found_words': [],
+        'current_word': '',
+        'last_round_letters': [],
+        'combo_count': 0,
+        'run_stats': {
+            'total_words': 0,
+            'total_score': 0,
+            'rounds_completed': 0
+        }
     }
 
-def generate_grid():
-    """Generate a 4x4 letter grid"""
-    vowels = "AEIOU"
-    consonants = "BCDFGHJKLMNPQRSTVWXYZ"
-    grid = []
+def generate_boggle_grid(size=5):
+    """Generate a Boggle-style letter grid"""
+    # Weighted letter distribution similar to Boggle
+    vowels = 'AEIOU'
+    consonants = 'BCDFGHJKLMNPQRSTVWXYZ'
     
-    for i in range(4):
+    grid = []
+    for i in range(size):
         row = []
-        for j in range(4):
-            # 30% chance for vowels
-            if random.random() < 0.3:
-                row.append(random.choice(vowels))
+        for j in range(size):
+            # 40% chance for vowel, 60% for consonant
+            if random.random() < 0.4:
+                letter = random.choice(vowels)
             else:
-                row.append(random.choice(consonants))
+                letter = random.choice(consonants)
+            row.append(letter)
         grid.append(row)
     
     return grid
 
-def calculate_enhanced_score(word, power_cards, word_count):
-    """Calculate word score with power card effects"""
-    base_score = calculate_base_score(word)
+def calculate_word_score(word, power_deck, found_words, last_round_letters):
+    """Calculate score with power card effects"""
+    base_score = len(word) * 10
+    bonus_score = 0
     effects = []
-    total_bonus = 0
     
-    for card in power_cards:
-        original_score = base_score
+    # Apply power card effects
+    for card in power_deck:
         card_bonus = 0
         
-        if card['effect_type'] == 'letterMultiplier':
-            base_score = int(base_score * card['value'])
-            card_bonus = base_score - original_score
+        if card['effect_type'] == 'vowel_bonus':
+            vowel_count = sum(1 for c in word if c.lower() in 'aeiou')
+            card_bonus = vowel_count * card['value']
             
-        elif card['effect_type'] == 'vowelBonus':
-            vowel_count = sum(1 for c in word.upper() if c in 'AEIOU')
-            if vowel_count > 0:
-                base_score += vowel_count * 25
-                base_score = int(base_score * card['value'])
-                card_bonus = base_score - original_score
-                
-        elif card['effect_type'] == 'chainMultiplier':
-            chain_length = min(word_count, 10)
-            if chain_length > 0:
-                multiplier = 1 + (chain_length * 0.5)
-                base_score = int(base_score * multiplier)
-                card_bonus = base_score - original_score
-                
-        elif card['effect_type'] == 'longWordMultiplier':
-            if len(word) >= card.get('min_length', 6):
-                base_score = int(base_score * card['value'])
-                card_bonus = base_score - original_score
-                
-        elif card['effect_type'] == 'shortWordMultiplier':
-            if len(word) <= card.get('max_length', 4):
-                base_score = int(base_score * card['value'])
-                card_bonus = base_score - original_score
-                
-        elif card['effect_type'] == 'goldenLetters':
-            if random.random() < card.get('chance', 0.4):
-                base_score = int(base_score * card['value'])
-                card_bonus = base_score - original_score
-                
-        elif card['effect_type'] == 'wordEcho':
-            if random.random() < card.get('chance', 0.35):
-                base_score = int(base_score * 2)
-                card_bonus = base_score - original_score
-                
-        elif card['effect_type'] == 'avalancheBonus':
-            if (word_count + 1) % card.get('interval', 3) == 0:
-                base_score = int(base_score * card['value'])
-                card_bonus = base_score - original_score
-                
-        elif card['effect_type'] == 'rareLetterBonus':
-            rare_count = sum(1 for c in word.upper() if c in 'JQXZ')
-            if rare_count > 0:
-                bonus = rare_count * card['value']
-                base_score += bonus
-                card_bonus = bonus
-                
-        elif card['effect_type'] == 'baseScoreBonus':
-            base_score += card['value']
-            card_bonus = card['value']
+        elif card['effect_type'] == 'repeat_bonus' and last_round_letters:
+            repeat_count = sum(1 for c in word if c in last_round_letters)
+            card_bonus = repeat_count * card['value']
+            
+        elif card['effect_type'] == 'score_multiplier' and len(word) >= 6:
+            card_bonus = base_score  # Double the score
+            
+        elif card['effect_type'] == 'anagram_bonus':
+            # Check if this word is anagram of previous word
+            if found_words and sorted(word.lower()) == sorted(found_words[-1].lower()):
+                card_bonus = card['value']
         
-        # Track effects for animations
         if card_bonus > 0:
+            bonus_score += card_bonus
             effects.append({
-                'card_id': card['id'],
                 'card_name': card['name'],
-                'emoji': card['emoji'],
+                'icon': card['icon'],
                 'bonus': card_bonus,
                 'message': f"{card['name']}: +{card_bonus} points!"
             })
-            total_bonus += card_bonus
     
-    return base_score, effects
-
-def calculate_base_score(word):
-    """Calculate base word score based on length"""
-    length = len(word)
-    if length == 2:
-        return 8
-    elif length == 3:
-        return 12
-    elif length == 4:
-        return 18
-    elif length == 5:
-        return 25
-    elif length == 6:
-        return 35
-    elif length == 7:
-        return 50
-    else:  # 8+ letters
-        return 70
-
-def is_valid_word(word):
-    """Simple word validation - in production, use a real dictionary API"""
-    # For demo purposes, accept words 2+ letters
-    return len(word) >= 2 and word.isalpha()
+    return base_score + bonus_score, effects
 
 @app.route('/')
 def index():
@@ -268,19 +244,34 @@ def index():
         session['game_state'] = init_game_state()
     return render_template('game.html')
 
-@app.route('/manifest.json')
-def manifest():
-    return app.send_static_file('manifest.json')
-
-@app.route('/sw.js')
-def service_worker():
-    return app.send_static_file('sw.js')
-
 @app.route('/api/game_state')
 def get_game_state():
     if 'game_state' not in session:
         session['game_state'] = init_game_state()
     return jsonify(session['game_state'])
+
+@app.route('/api/start_game', methods=['POST'])
+def start_game():
+    session['game_state'] = init_game_state()
+    game_state = session['game_state']
+    game_state['game_phase'] = 'challenge_select'
+    session['game_state'] = game_state
+    return jsonify({'success': True, 'game_state': game_state})
+
+@app.route('/api/select_challenge', methods=['POST'])
+def select_challenge():
+    data = request.json
+    challenge_type = data.get('type', 'standard')
+    
+    game_state = session.get('game_state', init_game_state())
+    game_state['game_phase'] = 'playing'
+    game_state['grid'] = generate_boggle_grid()
+    game_state['time_remaining'] = 120
+    game_state['words_remaining'] = 3
+    game_state['found_words'] = []
+    
+    session['game_state'] = game_state
+    return jsonify({'success': True, 'game_state': game_state})
 
 @app.route('/api/submit_word', methods=['POST'])
 def submit_word():
@@ -289,23 +280,39 @@ def submit_word():
     
     game_state = session.get('game_state', init_game_state())
     
-    # Validate word
-    if not is_valid_word(word):
+    # Validate word using API
+    validation = validate_word_api(word)
+    if not validation['valid']:
         return jsonify({'success': False, 'message': 'Invalid word'})
     
-    if word in game_state['words_found']:
+    if word in game_state['found_words']:
         return jsonify({'success': False, 'message': 'Word already found!'})
     
     # Calculate score with power card effects
-    score, effects = calculate_enhanced_score(word, game_state['inventory'], game_state['word_count'])
+    score, effects = calculate_word_score(
+        word, 
+        game_state['power_deck'], 
+        game_state['found_words'],
+        game_state['last_round_letters']
+    )
     
     # Update game state
-    game_state['words_found'].append(word)
+    game_state['found_words'].append(word)
     game_state['score'] += score
-    game_state['word_count'] += 1
+    game_state['words_remaining'] -= 1
+    game_state['run_stats']['total_words'] += 1
+    game_state['run_stats']['total_score'] += score
     
-    # Check level completion
-    level_complete = game_state['score'] >= game_state['target_score']
+    # Check round completion
+    round_complete = (game_state['score'] >= game_state['goal_score'] or 
+                     game_state['words_remaining'] <= 0)
+    
+    if round_complete:
+        if game_state['score'] >= game_state['goal_score']:
+            game_state['game_phase'] = 'shop'
+            game_state['coins'] += 50  # Round completion bonus
+        else:
+            game_state['game_phase'] = 'game_over'
     
     session['game_state'] = game_state
     
@@ -315,60 +322,51 @@ def submit_word():
         'score': score,
         'total_score': game_state['score'],
         'effects': effects,
-        'level_complete': level_complete,
+        'round_complete': round_complete,
+        'words_remaining': game_state['words_remaining'],
+        'definition': validation.get('definition', ''),
         'message': f"Found '{word}'! +{score} points"
     })
 
-@app.route('/api/shuffle_grid', methods=['POST'])
-def shuffle_grid():
-    game_state = session.get('game_state', init_game_state())
-    
-    if game_state['coins'] >= 10:
-        game_state['coins'] -= 10
-        game_state['grid'] = generate_grid()
-        session['game_state'] = game_state
-        
-        return jsonify({
-            'success': True,
-            'grid': game_state['grid'],
-            'coins': game_state['coins']
-        })
-    else:
-        return jsonify({'success': False, 'message': 'Not enough coins!'})
-
 @app.route('/api/shop_items')
 def get_shop_items():
-    """Generate 6 random shop items"""
-    level = session.get('game_state', {}).get('level', 1)
+    """Generate shop items for current round"""
+    game_state = session.get('game_state', init_game_state())
     
-    # Shuffle and select 6 cards
-    available_cards = random.sample(POWER_CARDS, min(6, len(POWER_CARDS)))
+    # Generate 4-6 random cards
+    available_cards = random.sample(POWER_CARDS, min(5, len(POWER_CARDS)))
     
-    shop_items = []
-    for card in available_cards:
-        # Calculate cost with level scaling
-        cost = int(card['base_cost'] * (1 + level * 0.1))
-        
-        item = {
-            'id': f"{card['name'].lower().replace(' ', '_')}_{random.randint(1000, 9999)}",
-            'name': card['name'],
-            'description': card['description'],
-            'effect_type': card['effect_type'],
-            'value': card.get('value', 1),
-            'emoji': card['emoji'],
-            'rarity': card['rarity'],
-            'cost': cost,
-            'sell_value': int(cost * 0.6)
-        }
-        
-        # Add additional properties
-        for key in ['min_length', 'max_length', 'chance', 'interval']:
-            if key in card:
-                item[key] = card[key]
-        
-        shop_items.append(item)
+    # Add upgrade options for owned cards
+    upgrades = []
+    for owned_card in game_state['power_deck']:
+        if 'upgrades' in owned_card:
+            for upgrade in owned_card['upgrades']:
+                upgrades.append({
+                    **upgrade,
+                    'is_upgrade': True,
+                    'parent_id': owned_card['id']
+                })
     
-    return jsonify(shop_items)
+    return jsonify({
+        'cards': available_cards,
+        'upgrades': upgrades[:2],  # Limit upgrades shown
+        'packs': [
+            {
+                'id': 'power_pack',
+                'name': 'Power Pack',
+                'description': '3 random Power Cards',
+                'icon': '📦',
+                'cost': 100
+            },
+            {
+                'id': 'spell_pack', 
+                'name': 'Spell Pack',
+                'description': '1-use grid modifiers',
+                'icon': '✨',
+                'cost': 80
+            }
+        ]
+    })
 
 @app.route('/api/purchase_item', methods=['POST'])
 def purchase_item():
@@ -379,7 +377,16 @@ def purchase_item():
     
     if game_state['coins'] >= item['cost']:
         game_state['coins'] -= item['cost']
-        game_state['inventory'].append(item)
+        
+        if item.get('is_upgrade'):
+            # Replace parent card with upgrade
+            game_state['power_deck'] = [
+                item if card['id'] == item['parent_id'] else card
+                for card in game_state['power_deck']
+            ]
+        else:
+            game_state['power_deck'].append(item)
+        
         session['game_state'] = game_state
         
         return jsonify({
@@ -388,35 +395,34 @@ def purchase_item():
             'message': f"Purchased {item['name']}!"
         })
     else:
-        return jsonify({
-            'success': False,
-            'message': 'Not enough coins!'
-        })
+        return jsonify({'success': False, 'message': 'Not enough coins!'})
 
-@app.route('/api/next_level', methods=['POST'])
-def next_level():
+@app.route('/api/continue_to_next_round', methods=['POST'])
+def continue_to_next_round():
     game_state = session.get('game_state', init_game_state())
     
-    # Advance to next level
-    game_state['level'] += 1
-    game_state['target_score'] = int(75 * (1.6 ** (game_state['level'] - 1)))
-    game_state['grid'] = generate_grid()
-    game_state['words_found'] = []
+    # Save letters from this round for echo effects
+    game_state['last_round_letters'] = [letter for row in game_state['grid'] for letter in row]
+    
+    # Advance round
+    game_state['round'] += 1
+    game_state['game_phase'] = 'challenge_select'
     game_state['score'] = 0
-    game_state['word_count'] = 0
-    game_state['coins'] += 20  # Level completion bonus
-    game_state['time_remaining'] = max(45, 120 - (game_state['level'] - 1) * 10)
+    game_state['goal_score'] = int(game_state['goal_score'] * 1.3)  # Increase difficulty
+    game_state['grid'] = generate_boggle_grid()
+    game_state['found_words'] = []
+    game_state['words_remaining'] = 3
+    game_state['time_remaining'] = max(60, 120 - (game_state['round'] * 10))
+    
+    # Check ante progression
+    if game_state['round'] > 3:
+        game_state['ante'] += 1
+        game_state['round'] = 1
+        if game_state['ante'] > 8:
+            game_state['game_phase'] = 'victory'
     
     session['game_state'] = game_state
-    
-    return jsonify({
-        'success': True,
-        'level': game_state['level'],
-        'target_score': game_state['target_score'],
-        'grid': game_state['grid'],
-        'coins': game_state['coins'],
-        'time_remaining': game_state['time_remaining']
-    })
+    return jsonify({'success': True, 'game_state': game_state})
 
 @app.route('/api/reset_game', methods=['POST'])
 def reset_game():

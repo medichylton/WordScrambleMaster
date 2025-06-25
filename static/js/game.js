@@ -1,133 +1,188 @@
-// Game State
-let gameState = {
-    level: 1,
-    score: 0,
-    coins: 15,
-    target_score: 75,
-    words_found: [],
-    inventory: [],
-    grid: [],
-    word_count: 0,
-    time_remaining: 120
-};
-
-let currentWord = '';
+// Word Scramble Master - Roguelike Deckbuilder
+let gameState = {};
+let timer = null;
 let selectedCells = [];
 let isSelecting = false;
+let currentWord = '';
 
 // DOM Elements
 const elements = {
+    // Phases
+    menuPhase: document.getElementById('menuPhase'),
+    challengeSelectPhase: document.getElementById('challengeSelectPhase'),
+    playingPhase: document.getElementById('playingPhase'),
+    shopPhase: document.getElementById('shopPhase'),
+    gameOverPhase: document.getElementById('gameOverPhase'),
+    victoryPhase: document.getElementById('victoryPhase'),
+    
+    // Menu
+    newGameBtn: document.getElementById('newGameBtn'),
+    continueBtn: document.getElementById('continueBtn'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    
+    // Challenge Select
+    anteDisplay: document.getElementById('anteDisplay'),
+    roundDisplay: document.getElementById('roundDisplay'),
+    goalScore: document.getElementById('goalScore'),
+    timeLimit: document.getElementById('timeLimit'),
+    attemptsLimit: document.getElementById('attemptsLimit'),
+    coinReward: document.getElementById('coinReward'),
+    startChallengeBtn: document.getElementById('startChallengeBtn'),
+    
+    // Playing Phase
     coinsDisplay: document.getElementById('coinsDisplay'),
     scoreDisplay: document.getElementById('scoreDisplay'),
-    levelDisplay: document.getElementById('levelDisplay'),
-    powerCardsContainer: document.getElementById('powerCardsContainer'),
+    targetDisplay: document.getElementById('targetDisplay'),
+    timerDisplay: document.getElementById('timerDisplay'),
+    wordsRemainingDisplay: document.getElementById('wordsRemainingDisplay'),
+    powerDeckContainer: document.getElementById('powerDeckContainer'),
     letterGrid: document.getElementById('letterGrid'),
     currentWordDisplay: document.getElementById('currentWord'),
-
+    wordValidation: document.getElementById('wordValidation'),
     shuffleBtn: document.getElementById('shuffleBtn'),
-    shopBtn: document.getElementById('shopBtn'),
-    progressFill: document.getElementById('progressFill'),
-    targetScore: document.getElementById('targetScore'),
+    
+    // Shop
+    shopCoinsDisplay: document.getElementById('shopCoinsDisplay'),
+    shopCardsContainer: document.getElementById('shopCardsContainer'),
+    shopUpgradesContainer: document.getElementById('shopUpgradesContainer'),
+    shopPacksContainer: document.getElementById('shopPacksContainer'),
+    refreshShopBtn: document.getElementById('refreshShopBtn'),
+    continueShopBtn: document.querySelector('#shopPhase #continueBtn'),
+    
+    // Messages
     messageContainer: document.getElementById('messageContainer'),
-    shopModal: document.getElementById('shopModal'),
-    shopItems: document.getElementById('shopItems'),
-    closeShop: document.getElementById('closeShop'),
-    levelCompleteModal: document.getElementById('levelCompleteModal'),
-    nextLevelBtn: document.getElementById('nextLevelBtn'),
-    loadingScreen: document.getElementById('loadingScreen')
+    effectsContainer: document.getElementById('effectsContainer')
 };
 
 // Initialize Game
-document.addEventListener('DOMContentLoaded', function() {
-    // Fix viewport height for mobile
-    setVH();
-    window.addEventListener('resize', setVH);
-    
+document.addEventListener('DOMContentLoaded', () => {
     initializeGame();
     setupEventListeners();
 });
 
-function setVH() {
-    let vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
+function initializeGame() {
+    loadGameState();
+    showPhase(gameState.game_phase || 'menu');
 }
 
-function initializeGame() {
-    // Show loading screen
-    elements.loadingScreen.classList.remove('hidden');
+function setupEventListeners() {
+    // Menu buttons
+    elements.newGameBtn.addEventListener('click', startNewGame);
+    elements.startChallengeBtn.addEventListener('click', startChallenge);
+    elements.shuffleBtn.addEventListener('click', shuffleGrid);
+    elements.continueShopBtn.addEventListener('click', continueToNextRound);
     
+    // Grid interaction (will be set when grid is rendered)
+}
+
+function loadGameState() {
     fetch('/api/game_state')
         .then(response => response.json())
         .then(data => {
             gameState = data;
             updateDisplay();
-            renderGrid();
-            renderPowerCards();
-            
-            // Hide loading screen
-            setTimeout(() => {
-                elements.loadingScreen.classList.add('hidden');
-            }, 1000);
         })
-        .catch(error => {
-            console.error('Error loading game state:', error);
-            elements.loadingScreen.classList.add('hidden');
-        });
+        .catch(error => console.error('Error loading game state:', error));
 }
 
-function setupEventListeners() {
-    // Submit word
-    elements.submitBtn.addEventListener('click', submitWord);
-    
-    // Clear selection
-    elements.clearBtn.addEventListener('click', clearSelection);
-    
-    // Shuffle grid
-    elements.shuffleBtn.addEventListener('click', shuffleGrid);
-    
-    // Open shop
-    elements.shopBtn.addEventListener('click', openShop);
-    
-    // Close shop
-    elements.closeShop.addEventListener('click', closeShop);
-    
-    // Next level
-    elements.nextLevelBtn.addEventListener('click', nextLevel);
-    
-    // Keyboard support
-    document.addEventListener('keydown', handleKeyPress);
-    
-    // Prevent context menu on long press
-    document.addEventListener('contextmenu', e => e.preventDefault());
-    
-    // Prevent zoom on double tap
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', function(event) {
-        const now = (new Date()).getTime();
-        if (now - lastTouchEnd <= 300) {
-            event.preventDefault();
+function startNewGame() {
+    fetch('/api/start_game', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                gameState = data.game_state;
+                showPhase('challenge_select');
+                updateDisplay();
+            }
+        })
+        .catch(error => console.error('Error starting game:', error));
+}
+
+function startChallenge() {
+    fetch('/api/select_challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'standard' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            gameState = data.game_state;
+            showPhase('playing');
+            updateDisplay();
+            renderGrid();
+            startTimer();
         }
-        lastTouchEnd = now;
-    }, false);
+    })
+    .catch(error => console.error('Error starting challenge:', error));
+}
+
+function showPhase(phase) {
+    // Hide all phases
+    Object.values(elements).forEach(el => {
+        if (el && el.classList && el.classList.contains('game-phase')) {
+            el.classList.add('hidden');
+        }
+    });
+    
+    // Show current phase
+    const phaseMap = {
+        'menu': elements.menuPhase,
+        'challenge_select': elements.challengeSelectPhase,
+        'playing': elements.playingPhase,
+        'shop': elements.shopPhase,
+        'game_over': elements.gameOverPhase,
+        'victory': elements.victoryPhase
+    };
+    
+    const currentPhase = phaseMap[phase];
+    if (currentPhase) {
+        currentPhase.classList.remove('hidden');
+    }
+    
+    // Stop timer if not in playing phase
+    if (phase !== 'playing' && timer) {
+        clearInterval(timer);
+        timer = null;
+    }
+    
+    // Load shop items if entering shop
+    if (phase === 'shop') {
+        loadShopItems();
+    }
 }
 
 function updateDisplay() {
-    elements.coinsDisplay.textContent = `🪙 ${gameState.coins}`;
-    elements.scoreDisplay.textContent = gameState.score;
-    elements.levelDisplay.textContent = `Lv.${gameState.level}`;
-    elements.targetScore.textContent = `Target: ${gameState.target_score} points`;
+    if (!gameState) return;
     
-    // Update progress bar
-    const progress = Math.min((gameState.score / gameState.target_score) * 100, 100);
-    elements.progressFill.style.width = `${progress}%`;
+    // Update common displays
+    if (elements.coinsDisplay) elements.coinsDisplay.textContent = gameState.coins || 0;
+    if (elements.scoreDisplay) elements.scoreDisplay.textContent = gameState.score || 0;
+    if (elements.targetDisplay) elements.targetDisplay.textContent = gameState.goal_score || 0;
+    if (elements.wordsRemainingDisplay) elements.wordsRemainingDisplay.textContent = gameState.words_remaining || 0;
     
-    // Update button states
-    elements.shuffleBtn.disabled = gameState.coins < 10;
-    elements.submitBtn.disabled = currentWord.length < 2;
+    // Update challenge select displays
+    if (elements.anteDisplay) elements.anteDisplay.textContent = `Ante ${gameState.ante || 1}`;
+    if (elements.roundDisplay) elements.roundDisplay.textContent = `Round ${gameState.round || 1}`;
+    if (elements.goalScore) elements.goalScore.textContent = gameState.goal_score || 300;
+    if (elements.timeLimit) elements.timeLimit.textContent = gameState.time_remaining || 120;
+    if (elements.attemptsLimit) elements.attemptsLimit.textContent = gameState.words_remaining || 3;
+    
+    // Update shop display
+    if (elements.shopCoinsDisplay) elements.shopCoinsDisplay.textContent = gameState.coins || 0;
+    
+    // Update power deck
+    renderPowerDeck();
 }
 
 function renderGrid() {
+    if (!gameState.grid) return;
+    
     elements.letterGrid.innerHTML = '';
+    elements.letterGrid.className = 'letter-grid';
+    
+    const gridSize = gameState.grid.length;
+    elements.letterGrid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
     
     gameState.grid.forEach((row, rowIndex) => {
         row.forEach((letter, colIndex) => {
@@ -137,151 +192,112 @@ function renderGrid() {
             cell.dataset.row = rowIndex;
             cell.dataset.col = colIndex;
             
-            // Touch events for mobile
-            cell.addEventListener('touchstart', handleCellTouchStart);
+            // Add event listeners for cell selection
+            cell.addEventListener('mousedown', (e) => handleCellStart(e, rowIndex, colIndex));
+            cell.addEventListener('mouseenter', (e) => handleCellEnter(e, rowIndex, colIndex));
+            cell.addEventListener('touchstart', (e) => handleCellStart(e, rowIndex, colIndex));
             cell.addEventListener('touchmove', handleTouchMove);
-            cell.addEventListener('touchend', handleTouchEnd);
-            
-            // Mouse events for desktop
-            cell.addEventListener('mousedown', handleCellMouseDown);
-            cell.addEventListener('mouseenter', handleCellMouseEnter);
-            cell.addEventListener('mouseup', handleMouseUp);
             
             elements.letterGrid.appendChild(cell);
         });
     });
+    
+    // Add global mouse/touch end listeners
+    document.addEventListener('mouseup', handleSelectionEnd);
+    document.addEventListener('touchend', handleSelectionEnd);
 }
 
-function renderPowerCards() {
-    elements.powerCardsContainer.innerHTML = '';
+function renderPowerDeck() {
+    if (!gameState.power_deck || !elements.powerDeckContainer) return;
     
-    // Show first 3 power cards
-    const cardsToShow = gameState.inventory.slice(0, 3);
+    elements.powerDeckContainer.innerHTML = '';
     
-    cardsToShow.forEach(card => {
+    gameState.power_deck.forEach(card => {
         const cardElement = document.createElement('div');
         cardElement.className = 'power-card';
-        cardElement.textContent = card.emoji;
-        cardElement.dataset.cardId = card.id;
-        cardElement.title = `${card.name}: ${card.description}`;
-        
-        elements.powerCardsContainer.appendChild(cardElement);
+        cardElement.innerHTML = `
+            <div class="power-card-icon">${card.icon}</div>
+            <div class="power-card-name">${card.name}</div>
+            <div class="power-card-description">${card.description}</div>
+        `;
+        elements.powerDeckContainer.appendChild(cardElement);
     });
+}
+
+function handleCellStart(e, row, col) {
+    e.preventDefault();
+    isSelecting = true;
+    selectedCells = [{row, col}];
+    updateWordDisplay();
+    updateCellStyles();
+}
+
+function handleCellEnter(e, row, col) {
+    if (!isSelecting) return;
     
-    // Add empty slots
-    const emptySlots = 3 - cardsToShow.length;
-    for (let i = 0; i < emptySlots; i++) {
-        const emptySlot = document.createElement('div');
-        emptySlot.className = 'power-card empty';
-        elements.powerCardsContainer.appendChild(emptySlot);
+    const lastCell = selectedCells[selectedCells.length - 1];
+    if (!lastCell) return;
+    
+    // Check if adjacent
+    const rowDiff = Math.abs(row - lastCell.row);
+    const colDiff = Math.abs(col - lastCell.col);
+    
+    if (rowDiff <= 1 && colDiff <= 1 && (rowDiff + colDiff > 0)) {
+        // Check if already in path (for backtracking)
+        const existingIndex = selectedCells.findIndex(cell => cell.row === row && cell.col === col);
+        
+        if (existingIndex === -1) {
+            selectedCells.push({row, col});
+        } else if (existingIndex === selectedCells.length - 2) {
+            selectedCells.pop(); // Backtrack
+        }
+        
+        updateWordDisplay();
+        updateCellStyles();
     }
 }
 
-// Touch and Mouse Handling for Letter Selection
-let touchStartPos = null;
-let isMouseDown = false;
-
-function handleCellTouchStart(e) {
-    e.preventDefault();
-    isSelecting = true;
-    const cell = e.currentTarget;
-    startSelection(cell);
-    touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-}
-
 function handleTouchMove(e) {
-    e.preventDefault();
     if (!isSelecting) return;
+    e.preventDefault();
     
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     
     if (element && element.classList.contains('letter-cell')) {
-        addToSelection(element);
+        const row = parseInt(element.dataset.row);
+        const col = parseInt(element.dataset.col);
+        handleCellEnter(e, row, col);
     }
 }
 
-function handleTouchEnd(e) {
-    e.preventDefault();
-    isSelecting = false;
-    touchStartPos = null;
+function handleSelectionEnd(e) {
+    if (!isSelecting) return;
     
-    // Auto-submit word if it's valid (2+ letters)
+    isSelecting = false;
+    
     if (currentWord.length >= 2) {
         submitWord();
     } else {
         clearSelection();
-    }
-}
-
-function handleCellMouseDown(e) {
-    e.preventDefault();
-    isMouseDown = true;
-    isSelecting = true;
-    startSelection(e.currentTarget);
-}
-
-function handleCellMouseEnter(e) {
-    if (isSelecting && isMouseDown) {
-        addToSelection(e.currentTarget);
-    }
-}
-
-function handleMouseUp(e) {
-    isMouseDown = false;
-    isSelecting = false;
-    
-    // Auto-submit word if it's valid (2+ letters)
-    if (currentWord.length >= 2) {
-        submitWord();
-    } else {
-        clearSelection();
-    }
-}
-
-function startSelection(cell) {
-    clearSelection();
-    selectedCells = [cell];
-    updateWordDisplay();
-    updateCellStyles();
-}
-
-function addToSelection(cell) {
-    const row = parseInt(cell.dataset.row);
-    const col = parseInt(cell.dataset.col);
-    
-    // Check if cell is adjacent to last selected cell
-    if (selectedCells.length > 0) {
-        const lastCell = selectedCells[selectedCells.length - 1];
-        const lastRow = parseInt(lastCell.dataset.row);
-        const lastCol = parseInt(lastCell.dataset.col);
-        
-        const rowDiff = Math.abs(row - lastRow);
-        const colDiff = Math.abs(col - lastCol);
-        
-        // Allow adjacent cells (including diagonals)
-        if (rowDiff <= 1 && colDiff <= 1 && (rowDiff + colDiff > 0)) {
-            // Check if this cell is already in the path
-            const cellIndex = selectedCells.indexOf(cell);
-            
-            if (cellIndex === -1) {
-                // Add new cell
-                selectedCells.push(cell);
-            } else if (cellIndex === selectedCells.length - 2) {
-                // Backtrack to previous cell
-                selectedCells.pop();
-            }
-            
-            updateWordDisplay();
-            updateCellStyles();
-        }
     }
 }
 
 function updateWordDisplay() {
-    currentWord = selectedCells.map(cell => cell.textContent).join('');
+    currentWord = selectedCells.map(cell => 
+        gameState.grid[cell.row][cell.col]
+    ).join('');
+    
     elements.currentWordDisplay.textContent = currentWord || 'TAP LETTERS TO SPELL';
-    elements.submitBtn.disabled = currentWord.length < 2;
+    
+    // Update validation display
+    if (currentWord.length >= 2) {
+        elements.wordValidation.textContent = 'Checking...';
+        elements.wordValidation.className = 'word-validation checking';
+    } else {
+        elements.wordValidation.textContent = '';
+        elements.wordValidation.className = 'word-validation';
+    }
 }
 
 function updateCellStyles() {
@@ -291,11 +307,14 @@ function updateCellStyles() {
     });
     
     // Style selected cells
-    selectedCells.forEach((cell, index) => {
-        if (index === selectedCells.length - 1) {
-            cell.classList.add('selected');
-        } else {
-            cell.classList.add('in-path');
+    selectedCells.forEach((cellPos, index) => {
+        const cell = document.querySelector(`[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`);
+        if (cell) {
+            if (index === selectedCells.length - 1) {
+                cell.classList.add('selected');
+            } else {
+                cell.classList.add('in-path');
+            }
         }
     });
 }
@@ -312,29 +331,29 @@ function submitWord() {
     
     fetch('/api/submit_word', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ word: currentWord })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             gameState.score = data.total_score;
-            gameState.words_found.push(data.word);
-            gameState.word_count++;
+            gameState.found_words = gameState.found_words || [];
+            gameState.found_words.push(data.word);
+            gameState.words_remaining = data.words_remaining;
             
-            // Trigger power card animations
+            // Show power card effects
             if (data.effects && data.effects.length > 0) {
-                triggerPowerCardEffects(data.effects);
+                showPowerCardEffects(data.effects);
             }
             
             showMessage(data.message, 'success');
             
-            // Check for level completion
-            if (data.level_complete) {
+            // Check round completion
+            if (data.round_complete) {
                 setTimeout(() => {
-                    elements.levelCompleteModal.classList.remove('hidden');
+                    loadGameState(); // Refresh state
+                    showPhase(gameState.game_phase);
                 }, 1000);
             }
             
@@ -348,277 +367,224 @@ function submitWord() {
     .catch(error => {
         console.error('Error submitting word:', error);
         showMessage('Network error - try again', 'error');
+        clearSelection();
     });
 }
 
-// POWER CARD DOPAMINE EFFECTS
-function triggerPowerCardEffects(effects) {
-    effects.forEach((effect, index) => {
-        setTimeout(() => {
-            const cardElement = document.querySelector(`[data-card-id="${effect.card_id}"]`);
-            if (cardElement) {
-                // Add active class for animation
-                cardElement.classList.add('active');
-                
-                // Show bonus points
-                showCardBonus(cardElement, effect.bonus);
-                
-                // Show effect message
-                showMessage(effect.message, 'success');
-                
-                // Remove active class after animation
-                setTimeout(() => {
-                    cardElement.classList.remove('active');
-                }, 600);
-                
-                // Add haptic feedback on mobile
-                if (navigator.vibrate) {
-                    navigator.vibrate([50, 50, 100]);
-                }
+function startTimer() {
+    if (timer) clearInterval(timer);
+    
+    timer = setInterval(() => {
+        if (gameState.time_remaining > 0) {
+            gameState.time_remaining--;
+            elements.timerDisplay.textContent = gameState.time_remaining;
+            
+            // Timer warning colors
+            if (gameState.time_remaining <= 10) {
+                elements.timerDisplay.style.color = '#ff0000';
+            } else if (gameState.time_remaining <= 30) {
+                elements.timerDisplay.style.color = '#ff6600';
             }
-        }, index * 200); // Stagger animations
-    });
-}
-
-function showCardBonus(cardElement, bonus) {
-    // Remove existing bonus display
-    const existingBonus = cardElement.querySelector('.power-card-bonus');
-    if (existingBonus) {
-        existingBonus.remove();
-    }
-    
-    // Create new bonus display
-    const bonusElement = document.createElement('div');
-    bonusElement.className = 'power-card-bonus';
-    bonusElement.textContent = `+${bonus}`;
-    
-    cardElement.appendChild(bonusElement);
-    
-    // Remove after animation
-    setTimeout(() => {
-        bonusElement.remove();
-    }, 2000);
+        } else {
+            clearInterval(timer);
+            // Time's up - force game over
+            gameState.game_phase = 'game_over';
+            showPhase('game_over');
+        }
+    }, 1000);
 }
 
 function shuffleGrid() {
-    if (gameState.coins < 10) return;
+    if (gameState.coins < 30) {
+        showMessage('Not enough coins! Need 30 coins.', 'error');
+        return;
+    }
     
-    fetch('/api/shuffle_grid', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            gameState.grid = data.grid;
-            gameState.coins = data.coins;
+    // Simple shuffle by regenerating grid (placeholder)
+    fetch('/api/game_state')
+        .then(response => response.json())
+        .then(data => {
+            gameState = data;
+            gameState.coins -= 30;
             renderGrid();
             updateDisplay();
-            clearSelection();
             showMessage('Grid shuffled!', 'success');
-        } else {
-            showMessage(data.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error shuffling grid:', error);
-        showMessage('Network error - try again', 'error');
-    });
-}
-
-function openShop() {
-    fetch('/api/shop_items')
-        .then(response => response.json())
-        .then(items => {
-            renderShopItems(items);
-            elements.shopModal.classList.remove('hidden');
-        })
-        .catch(error => {
-            console.error('Error loading shop:', error);
-            showMessage('Error loading shop', 'error');
         });
 }
 
-function closeShop() {
-    elements.shopModal.classList.add('hidden');
+function loadShopItems() {
+    fetch('/api/shop_items')
+        .then(response => response.json())
+        .then(data => {
+            renderShopCards(data.cards || []);
+            renderShopUpgrades(data.upgrades || []);
+            renderShopPacks(data.packs || []);
+        })
+        .catch(error => console.error('Error loading shop:', error));
 }
 
-function renderShopItems(items) {
-    elements.shopItems.innerHTML = '';
+function renderShopCards(cards) {
+    elements.shopCardsContainer.innerHTML = '';
     
-    items.forEach(item => {
-        const itemElement = document.createElement('div');
-        itemElement.className = 'shop-item';
-        
-        itemElement.innerHTML = `
-            <div class="shop-item-header">
-                <div class="shop-item-emoji">${item.emoji}</div>
-                <div class="shop-item-info">
-                    <div class="shop-item-name">${item.name}</div>
-                    <div class="shop-item-description">${item.description}</div>
-                </div>
+    cards.forEach(card => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'shop-card';
+        cardElement.innerHTML = `
+            <div class="shop-card-header">
+                <span class="shop-card-icon">${card.icon}</span>
+                <span class="shop-card-name">${card.name}</span>
+                <span class="shop-card-rarity ${card.rarity.toLowerCase()}">${card.rarity}</span>
             </div>
-            <div class="shop-item-footer">
-                <div class="shop-item-cost">🪙 ${item.cost}</div>
-                <div class="shop-item-rarity ${item.rarity}">${item.rarity}</div>
+            <div class="shop-card-description">${card.description}</div>
+            <div class="shop-card-footer">
+                <span class="shop-card-cost">💰 ${card.cost}</span>
+                <button class="purchase-btn gb-button ${gameState.coins >= card.cost ? 'primary' : 'disabled'}" 
+                        ${gameState.coins >= card.cost ? '' : 'disabled'}>
+                    ${gameState.coins >= card.cost ? 'Buy' : 'Too Expensive'}
+                </button>
             </div>
         `;
         
-        // Add click handler for purchase
-        itemElement.addEventListener('click', () => purchaseItem(item));
+        if (gameState.coins >= card.cost) {
+            cardElement.querySelector('.purchase-btn').addEventListener('click', () => purchaseItem(card));
+        }
         
-        // Add purchase button
-        const purchaseBtn = document.createElement('button');
-        purchaseBtn.className = 'gb-button primary';
-        purchaseBtn.textContent = gameState.coins >= item.cost ? 'BUY' : 'TOO EXPENSIVE';
-        purchaseBtn.disabled = gameState.coins < item.cost;
-        purchaseBtn.style.marginTop = '8px';
-        purchaseBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            purchaseItem(item);
-        });
+        elements.shopCardsContainer.appendChild(cardElement);
+    });
+}
+
+function renderShopUpgrades(upgrades) {
+    elements.shopUpgradesContainer.innerHTML = '';
+    
+    if (upgrades.length === 0) {
+        elements.shopUpgradesContainer.innerHTML = '<div class="no-upgrades">No upgrades available</div>';
+        return;
+    }
+    
+    upgrades.forEach(upgrade => {
+        const upgradeElement = document.createElement('div');
+        upgradeElement.className = 'shop-upgrade';
+        upgradeElement.innerHTML = `
+            <div class="upgrade-header">
+                <span class="upgrade-icon">${upgrade.icon}</span>
+                <span class="upgrade-name">${upgrade.name}</span>
+            </div>
+            <div class="upgrade-description">${upgrade.description}</div>
+            <div class="upgrade-footer">
+                <span class="upgrade-cost">💰 ${upgrade.cost}</span>
+                <button class="upgrade-btn gb-button ${gameState.coins >= upgrade.cost ? 'primary' : 'disabled'}" 
+                        ${gameState.coins >= upgrade.cost ? '' : 'disabled'}>
+                    ${gameState.coins >= upgrade.cost ? 'Upgrade' : 'Too Expensive'}
+                </button>
+            </div>
+        `;
         
-        itemElement.appendChild(purchaseBtn);
-        elements.shopItems.appendChild(itemElement);
+        if (gameState.coins >= upgrade.cost) {
+            upgradeElement.querySelector('.upgrade-btn').addEventListener('click', () => purchaseItem(upgrade));
+        }
+        
+        elements.shopUpgradesContainer.appendChild(upgradeElement);
+    });
+}
+
+function renderShopPacks(packs) {
+    elements.shopPacksContainer.innerHTML = '';
+    
+    packs.forEach(pack => {
+        const packElement = document.createElement('div');
+        packElement.className = 'shop-pack';
+        packElement.innerHTML = `
+            <div class="pack-header">
+                <span class="pack-icon">${pack.icon}</span>
+                <span class="pack-name">${pack.name}</span>
+            </div>
+            <div class="pack-description">${pack.description}</div>
+            <div class="pack-footer">
+                <span class="pack-cost">💰 ${pack.cost}</span>
+                <button class="pack-btn gb-button ${gameState.coins >= pack.cost ? 'primary' : 'disabled'}" 
+                        ${gameState.coins >= pack.cost ? '' : 'disabled'}>
+                    ${gameState.coins >= pack.cost ? 'Open' : 'Too Expensive'}
+                </button>
+            </div>
+        `;
+        
+        if (gameState.coins >= pack.cost) {
+            packElement.querySelector('.pack-btn').addEventListener('click', () => purchaseItem(pack));
+        }
+        
+        elements.shopPacksContainer.appendChild(packElement);
     });
 }
 
 function purchaseItem(item) {
-    if (gameState.coins < item.cost) {
-        showMessage('Not enough coins!', 'error');
-        return;
-    }
-    
     fetch('/api/purchase_item', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ item: item })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             gameState.coins = data.coins;
-            gameState.inventory.push(item);
-            updateDisplay();
-            renderPowerCards();
-            closeShop();
             showMessage(data.message, 'success');
+            updateDisplay();
+            loadShopItems(); // Refresh shop
         } else {
             showMessage(data.message, 'error');
         }
     })
     .catch(error => {
         console.error('Error purchasing item:', error);
-        showMessage('Network error - try again', 'error');
+        showMessage('Error purchasing item', 'error');
     });
 }
 
-function nextLevel() {
-    fetch('/api/next_level', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            gameState.level = data.level;
-            gameState.target_score = data.target_score;
-            gameState.grid = data.grid;
-            gameState.coins = data.coins;
-            gameState.score = 0;
-            gameState.words_found = [];
-            gameState.word_count = 0;
+function continueToNextRound() {
+    fetch('/api/continue_to_next_round', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                gameState = data.game_state;
+                showPhase(gameState.game_phase);
+                updateDisplay();
+            }
+        })
+        .catch(error => console.error('Error continuing to next round:', error));
+}
+
+function showPowerCardEffects(effects) {
+    effects.forEach((effect, index) => {
+        setTimeout(() => {
+            const effectElement = document.createElement('div');
+            effectElement.className = 'power-effect';
+            effectElement.innerHTML = `
+                <div class="effect-icon">${effect.icon}</div>
+                <div class="effect-text">+${effect.bonus}</div>
+            `;
             
-            updateDisplay();
-            renderGrid();
-            clearSelection();
+            elements.effectsContainer.appendChild(effectElement);
             
-            elements.levelCompleteModal.classList.add('hidden');
-            showMessage(`Welcome to Level ${data.level}!`, 'success');
-        }
-    })
-    .catch(error => {
-        console.error('Error advancing level:', error);
-        showMessage('Network error - try again', 'error');
+            // Add vibration on mobile
+            if (navigator.vibrate) {
+                navigator.vibrate([50, 50, 100]);
+            }
+            
+            // Remove after animation
+            setTimeout(() => {
+                effectElement.remove();
+            }, 2000);
+        }, index * 300);
     });
 }
 
 function showMessage(text, type = 'info') {
     const message = document.createElement('div');
-    message.className = `message ${type}`;
+    message.className = `message message-${type}`;
     message.textContent = text;
     
     elements.messageContainer.appendChild(message);
     
-    // Remove message after animation
     setTimeout(() => {
         message.remove();
     }, 3000);
-}
-
-function handleKeyPress(e) {
-    switch(e.key) {
-        case 'Enter':
-            if (currentWord.length >= 2) {
-                submitWord();
-            }
-            break;
-        case 'Escape':
-        case 'Backspace':
-            clearSelection();
-            break;
-    }
-}
-
-// PWA Installation prompt
-let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    
-    // Show install banner after a delay
-    setTimeout(() => {
-        if (deferredPrompt) {
-            showInstallPrompt();
-        }
-    }, 30000); // Show after 30 seconds
-});
-
-function showInstallPrompt() {
-    const installBanner = document.createElement('div');
-    installBanner.className = 'message success';
-    installBanner.innerHTML = `
-        📱 Install this app for a better experience! 
-        <button class="gb-button" style="margin-left: 8px; padding: 4px 8px; font-size: 12px;" onclick="promptInstall()">
-            INSTALL
-        </button>
-    `;
-    
-    elements.messageContainer.appendChild(installBanner);
-    
-    setTimeout(() => {
-        installBanner.remove();
-    }, 10000);
-}
-
-function promptInstall() {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-                console.log('PWA installed');
-            }
-            deferredPrompt = null;
-        });
-    }
-}
-
-// Expose for HTML onclick
-window.promptInstall = promptInstall; 
+} 

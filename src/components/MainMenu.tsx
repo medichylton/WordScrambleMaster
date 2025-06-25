@@ -123,7 +123,7 @@ const MainMenu: React.FC = () => {
           alignItems: 'center'
         }}>
           {hasSavedGame() && (
-            <button
+        <button 
               onClick={handleContinueGame}
               className="gb-button"
               style={{
@@ -139,10 +139,10 @@ const MainMenu: React.FC = () => {
               }}
             >
               Continue Game
-            </button>
-          )}
-          
-          <button
+          </button>
+        )}
+        
+        <button 
             onClick={handleNewGame}
             className="gb-button"
             style={{
@@ -158,7 +158,7 @@ const MainMenu: React.FC = () => {
             }}
           >
             New Game
-          </button>
+        </button>
         </div>
 
         {/* Secondary Buttons - Stacked Vertically */}
@@ -169,8 +169,8 @@ const MainMenu: React.FC = () => {
           alignItems: 'center',
           marginTop: '20px'
         }}>
-          <button
-            onClick={() => setShowSettings(true)}
+        <button 
+          onClick={() => setShowSettings(true)}
             className="gb-button"
             style={{
               background: '#8BAC0F',
@@ -184,7 +184,7 @@ const MainMenu: React.FC = () => {
             }}
           >
             Settings
-          </button>
+        </button>
           
           <a
             href="https://github.com/yourusername/wordscramblemaster"
@@ -201,8 +201,8 @@ const MainMenu: React.FC = () => {
           >
             Help & Info
           </a>
-        </div>
-
+              </div>
+              
         {/* Game Stats */}
         {gameState.lifetimeCoins > 0 && (
           <div style={{
@@ -218,14 +218,14 @@ const MainMenu: React.FC = () => {
               marginBottom: '8px'
             }}>
               Lifetime Stats
-            </div>
+              </div>
             <div style={{
               fontSize: '12px',
               color: '#0F380F',
               fontWeight: 'bold'
             }}>
               Coins Earned: ◉ {gameState.lifetimeCoins}
-            </div>
+              </div>
             <div style={{
               fontSize: '12px',
               color: '#0F380F',
@@ -247,7 +247,7 @@ const MainMenu: React.FC = () => {
         opacity: 0.7
       }}>
         v1.0.0 • Game Boy Edition
-      </div>
+        </div>
 
       {/* Settings Modal */}
       {showSettings && (
@@ -265,7 +265,7 @@ const additionalStyles = `
   0%, 100% { 
     transform: scale(1);
     opacity: 1;
-  }
+}
   50% { 
     transform: scale(1.1);
     opacity: 0.8;

@@ -239,7 +239,7 @@ function ChallengeSelection() {
       left: 0
     }}>
       
-      <div style={{ 
+      <div style={{
         marginBottom: '20px',
         fontSize: '24px',
         fontWeight: 'bold',
@@ -288,7 +288,7 @@ function ChallengeSelection() {
             flexShrink: 0
           }}>
             POWER CARDS:
-          </div>
+      </div>
           {gameState.activePerks.map((perk, index) => (
             <div key={perk.id} style={{
               display: 'flex',
@@ -318,11 +318,11 @@ function ChallengeSelection() {
       }}>
         <div
           className="gb-button"
-          onClick={() => {
+            onClick={() => {
             setSelectedType(currentChallenge.type);
             setTimeout(() => handleChallengeSelect(currentChallenge), 100);
-          }}
-          style={{
+            }}
+            style={{
             background: selectedType === currentChallenge.type ? 'var(--color-text)' : 'var(--color-bg)',
             color: selectedType === currentChallenge.type ? 'var(--color-bg)' : 'var(--color-text)',
             border: '4px solid var(--color-text)',
@@ -337,7 +337,7 @@ function ChallengeSelection() {
           }}
         >
           {/* Challenge Header */}
-          <div style={{
+            <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -349,29 +349,29 @@ function ChallengeSelection() {
             <div style={{ fontSize: '14px' }}>
               [C] {currentChallenge.coinReward}
             </div>
-          </div>
-          
-          <div style={{ 
+            </div>
+            
+            <div style={{ 
             fontSize: '14px', 
             marginBottom: '12px',
             fontWeight: 'normal'
           }}>
             {currentChallenge.description}
-          </div>
-          
+            </div>
+            
           {/* Challenge Stats */}
-          <div style={{ 
+            <div style={{ 
             fontSize: '12px',
-            display: 'flex',
-            justifyContent: 'space-between',
+              display: 'flex',
+              justifyContent: 'space-between',
             marginBottom: '12px'
-          }}>
+            }}>
             <div>Target: {currentChallenge.targetScore} pts</div>
             <div>Time: {currentChallenge.timeLimit}s</div>
-          </div>
-
+            </div>
+            
           {/* Disadvantages */}
-          <div style={{
+            <div style={{
             marginBottom: '12px'
           }}>
             <div style={{
@@ -419,7 +419,7 @@ function ChallengeSelection() {
 
       {/* Future Levels Preview - Accordion Style */}
       <div style={{
-        width: '100%',
+              width: '100%',
         maxWidth: '500px',
         marginBottom: '20px'
       }}>
@@ -431,7 +431,7 @@ function ChallengeSelection() {
           textAlign: 'center'
         }}>
           FUTURE LEVELS:
-        </div>
+          </div>
         
         {futureLevels.map((level, index) => (
           <div key={level.level} style={{ marginBottom: '8px' }}>
@@ -688,7 +688,7 @@ function PlayingChallenge() {
     <div style={{ 
       width: '100vw',
       height: 'calc(var(--vh, 1vh) * 100)',
-      display: 'flex',
+      display: 'flex', 
       flexDirection: 'column',
       background: '#9BBB0F', // Game Boy screen green - lighter green from screenshot
       overflow: 'hidden',
@@ -728,8 +728,8 @@ function PlayingChallenge() {
           textAlign: 'center'
         }}>
           Level {gameState.currentLevel}
-        </div>
-        
+          </div>
+          
         {/* Stats Row */}
         <div style={{
           display: 'flex',
@@ -739,13 +739,13 @@ function PlayingChallenge() {
           maxWidth: '320px',
           marginBottom: '12px'
         }}>
-          <div style={{
+              <div style={{
             fontSize: '18px',
             color: '#0F380F',
             fontWeight: 'bold'
           }}>
             ◉{gameState.coins}
-          </div>
+              </div>
           
           {/* MASSIVE Score Display */}
           <div style={{ 
@@ -756,18 +756,18 @@ function PlayingChallenge() {
           }}>
             {currentScore}
           </div>
-
+          
           <div style={{
             fontSize: '18px',
             color: '#0F380F',
             fontWeight: 'bold'
           }}>
             {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-          </div>
         </div>
-        
+      </div>
+
         {/* Progress Bar */}
-        <div style={{
+      <div style={{
           width: '200px',
           height: '12px',
           background: '#0F380F',
@@ -785,8 +785,8 @@ function PlayingChallenge() {
 
       {/* Letter Grid - MUCH BIGGER NOW - Takes most of the screen */}
       <div style={{ 
-        flex: 1,
-        display: 'flex',
+        flex: 1, 
+        display: 'flex', 
         alignItems: 'center',
         justifyContent: 'center',
         padding: '20px',
@@ -803,9 +803,9 @@ function PlayingChallenge() {
           foundWords={wordsFound}
         />
       </div>
-
+      
       {/* Bottom Section */}
-      <div style={{
+        <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -839,7 +839,7 @@ function PlayingChallenge() {
               return (
                 <div key={item.id} style={{ position: 'relative' }}>
                   <div 
-                    style={{
+              style={{
                       width: '40px',
                       height: '40px',
                       background: isActivated ? '#9BBB0F' : '#0F380F',

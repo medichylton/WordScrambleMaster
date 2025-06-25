@@ -581,7 +581,7 @@ body {
   color: var(--pyxel-black);
   border-color: var(--pyxel-white);
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 
+    box-shadow: 
     0 6px 12px var(--shadow-dark),
     inset 0 1px 3px rgba(255,255,255,0.3),
     0 0 25px var(--glow-blue);
@@ -592,12 +592,12 @@ body {
   /* CRITICAL: Maintain fixed dimensions */
   width: 100%;
   height: 100%;
-}
+  }
 
 /* Invalid path indication */
 .letter-cell.invalid-path {
   border-color: var(--pyxel-red);
-  box-shadow: 
+    box-shadow: 
     0 4px 8px var(--shadow-dark),
     inset 0 1px 2px rgba(255,255,255,0.2),
     0 0 15px var(--pyxel-red);
@@ -683,7 +683,7 @@ body {
   0% { 
     transform: translateY(0) scale(1) rotate(0deg);
     opacity: 1;
-  }
+}
   25% {
     transform: translateY(-15px) scale(1.2) rotate(5deg);
     opacity: 1;
@@ -878,8 +878,8 @@ body {
     height: min(85vw, 75vh, 400px);
     gap: clamp(10px, 2.5vw, 15px);
     padding: 16px;
-  }
-  
+}
+
   .letter-cell {
     min-width: 70px;
     min-height: 70px;
