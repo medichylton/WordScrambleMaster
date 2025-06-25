@@ -101,17 +101,17 @@ body {
 }
 
 h2 {
-    font-size: 1.2rem;
+    font-size: 0.9rem; /* Smaller */
     color: var(--gb-green-dark);
     text-align: center;
-    margin: 0 0 16px 0;
+    margin: 0 0 12px 0;
     letter-spacing: 1px;
 }
 
 h3 {
-    font-size: 1rem;
+    font-size: 0.8rem; /* Smaller */
     color: var(--gb-green-dark);
-    margin: 0 0 12px 0;
+    margin: 0 0 8px 0;
 }
 
 .menu-frame {
@@ -152,7 +152,7 @@ h3 {
 }
 
 .info-label {
-    font-size: 0.8rem;
+    font-size: 0.7rem; /* Smaller */
     color: var(--gb-green-light);
     display: block;
     margin-bottom: 4px;
@@ -171,13 +171,13 @@ h3 {
 }
 .gb-button {
     font-family: var(--pixel-font);
-    font-size: 1rem;
+    font-size: 0.8rem; /* Smaller */
     background: var(--gb-green-light);
     color: var(--gb-green-dark);
     border: 3px solid var(--gb-green-dark);
     border-radius: 8px;
-    padding: 18px 0;
-    margin: 0 0 8px 0;
+    padding: 12px 0; /* Smaller padding */
+    margin: 0 0 6px 0;
     width: 100%;
     text-align: center;
     letter-spacing: 1px;
@@ -270,10 +270,13 @@ h3 {
 
 .grid-container {
     width: 100%;
+    height: 320px; /* Fixed height to prevent movement */
     display: flex;
     justify-content: center;
+    align-items: flex-start;
     margin: 16px 0 12px 0;
     padding: 0 8px;
+    flex-shrink: 0; /* Never shrink */
 }
 .letter-grid {
     display: grid;
@@ -317,11 +320,14 @@ h3 {
 
 .word-display {
     width: 100%;
+    height: 60px; /* Fixed height */
     margin: 8px 0 12px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     position: relative;
+    flex-shrink: 0; /* Never shrink */
 }
 .current-word {
     font-size: 1.1rem;

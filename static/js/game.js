@@ -208,7 +208,7 @@ function updateDisplay() {
     if (elements.playingAnte) elements.playingAnte.textContent = gameState.ante || 1;
     if (elements.playingRound) elements.playingRound.textContent = `${gameState.round || 1}/3`;
     if (elements.playingScore) elements.playingScore.textContent = gameState.score || 0;
-    if (elements.attemptsLeft) elements.attemptsLeft.textContent = gameState.words_remaining || 3;
+    // Remove words_remaining display
     
     // Shop displays
     if (elements.shopMoney) elements.shopMoney.textContent = gameState.coins || 0;
@@ -395,21 +395,7 @@ function updateWordDisplay() {
         }
     }
     
-    // Update validation display
-    if (elements.wordValidation) {
-        if (currentWord.length >= 2) {
-            elements.wordValidation.textContent = 'Ready';
-            elements.wordValidation.className = 'word-validation checking';
-        } else {
-            elements.wordValidation.textContent = '';
-            elements.wordValidation.className = 'word-validation';
-        }
-    }
-    
-    // Enable/disable submit button
-    if (elements.submitWordBtn) {
-        elements.submitWordBtn.disabled = currentWord.length < 2;
-    }
+    // Remove validation display and submit button - not needed
 }
 
 function updateCellStyles() {
@@ -452,7 +438,7 @@ function submitWord() {
             gameState.score = data.total_score;
             gameState.found_words = gameState.found_words || [];
             gameState.found_words.push(data.word);
-            gameState.words_remaining = data.words_remaining;
+            // Remove words_remaining tracking
             
             // Show power card effects
             if (data.effects && data.effects.length > 0) {
