@@ -327,25 +327,33 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       let effectMessages: string[] = [];
       
       if (state.inventory.length > 0) {
-        // Import power card effects
-        const { applyPowerCardEffects } = require('../utils/powerCardEffects');
-        
-        const context = {
-          currentWord: word,
-          currentScore: baseScore,
-          totalScore: state.totalScore,
-          wordsFound: state.challengeProgress?.wordsFound || [],
-          timeRemaining: state.challengeProgress?.timeRemaining || 0,
-          grid: [], // Would be passed from component
-          coins: state.coins,
-          activePerks: state.inventory, // Pass inventory items directly
-          level: state.currentLevel
-        };
-        
-        const powerCardResult = applyPowerCardEffects(word, baseScore, context);
-        finalScore = Math.floor(baseScore * powerCardResult.scoreModifier);
-        coinBonus = powerCardResult.coinBonus;
-        effectMessages = powerCardResult.messages;
+        // Apply simple power card effects without dynamic import
+        state.inventory.forEach(item => {
+          switch (item.effect.type) {
+            case 'letterMultiplier':
+              finalScore = Math.floor(finalScore * item.effect.value);
+              effectMessages.push(`🎯 ${item.name}: ${item.effect.value}x multiplier`);
+              break;
+            case 'vowelBonus':
+              const vowelCount = word.split('').filter(c => ['A', 'E', 'I', 'O', 'U'].includes(c.toUpperCase())).length;
+              if (vowelCount > 0) {
+                finalScore = Math.floor(finalScore * (1 + vowelCount * 0.5));
+                effectMessages.push(`✨ ${item.name}: +${vowelCount * 50}% vowel bonus`);
+              }
+              break;
+            case 'chainMultiplier':
+              const chainLength = Math.min(state.challengeProgress?.wordsFound.length || 0, 5);
+              if (chainLength > 0) {
+                finalScore = Math.floor(finalScore * (1 + chainLength * 0.2));
+                effectMessages.push(`⛓️ ${item.name}: +${chainLength * 20}% chain bonus`);
+              }
+              break;
+            default:
+              finalScore = Math.floor(finalScore * 1.5); // Default bonus
+              effectMessages.push(`⭐ ${item.name}: +50% bonus`);
+              break;
+          }
+        });
       }
       
       // Update challenge progress

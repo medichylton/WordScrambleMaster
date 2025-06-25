@@ -66,8 +66,12 @@ export type ItemEffect =
   | { type: 'vowelBonus'; value: number }
   | { type: 'chainMultiplier'; value: number }
   | { type: 'longWordMultiplier'; minLength: number; multiplier: number }
-  | { type: 'goldenLetters'; count: number }
+  | { type: 'shortWordMultiplier'; maxLength: number; multiplier: number }
+  | { type: 'goldenLetters'; enabled: boolean }
   | { type: 'wordEcho'; chance: number }
+  | { type: 'avalancheBonus'; interval: number; multiplier: number }
+  | { type: 'rareLetterBonus'; value: number }
+  | { type: 'baseScoreBonus'; value: number }
   | { type: 'exponentialGrowth'; multiplier: number }
   | { type: 'letterGod'; enabled: boolean }
   | { type: 'scoreToHealth'; ratio: number }

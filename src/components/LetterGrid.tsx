@@ -12,12 +12,13 @@ interface LetterGridProps {
   onWordFound: (word: string, score: number) => void;
   onScoreUpdate: (score: number) => void;
   onCurrentWordChange?: (word: string) => void;
+  onPowerCardTriggered?: (cardId: string, bonusPoints: number, message: string) => void;
   timeRemaining: number;
   hideWordDisplay?: boolean;
   foundWords?: string[];
 }
 
-export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, timeRemaining, hideWordDisplay = false, foundWords = [] }: LetterGridProps) {
+export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, onPowerCardTriggered, timeRemaining, hideWordDisplay = false, foundWords = [] }: LetterGridProps) {
   const { gameState } = useGame();
   const [grid, setGrid] = useState<string[][]>([]);
   const [selectedPath, setSelectedPath] = useState<Position[]>([]);
@@ -80,16 +81,15 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
         if (allFoundWords.includes(word)) {
           setWordValidationStatus('already-found');
         } else {
+          // Only do synchronous validation during selection to avoid API spam
           const syncResult = isValidWordSync(word);
           if (syncResult === true) {
             setWordValidationStatus('valid');
           } else if (syncResult === false) {
             setWordValidationStatus('invalid');
           } else {
-            setWordValidationStatus('checking');
-            isValidWord(word).then(isValid => {
-              setWordValidationStatus(isValid ? 'valid' : 'invalid');
-            });
+            // Don't check via API during selection - only when word is submitted
+            setWordValidationStatus('unknown');
           }
         }
       } else {
@@ -115,40 +115,97 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
       return 0;
     }
     
-    // Apply letter multiplier
-    if (letterMultiplier > 0) {
-      baseScore += word.length * letterMultiplier;
-    }
-    
-    // Apply vowel bonus
-    if (hasVowelPower) {
-      const vowelBonus = gameState.powerUps.find(p => p.effect.type === 'vowelBonus')?.effect.value || 2;
-      const vowelCount = word.split('').filter(letter => 'aeiouAEIOU'.includes(letter)).length;
-      baseScore += vowelCount * vowelBonus;
-    }
-    
-    // Apply chain multiplier
-    if (chainMultiplier > 0) {
-      baseScore += chainCount * chainMultiplier;
-    }
-    
-    // Apply long word multiplier
-    if (longWordMultiplier && word.length >= longWordMultiplier.minLength) {
-      baseScore *= longWordMultiplier.multiplier;
-    }
-    
-    // Apply golden letter bonus
-    const pathGoldenCount = selectedPath.filter(pos => 
-      goldenLetters.has(`${pos.row}-${pos.col}`)
-    ).length;
-    if (pathGoldenCount > 0) {
-      baseScore *= (1 + pathGoldenCount * 2); // 3x per golden letter
-    }
-    
-    // Apply exponential growth
-    if (exponentialGrowth) {
-      const growthFactor = Math.pow(exponentialGrowth.multiplier, allFoundWords.length);
-      baseScore *= growthFactor;
+    // Apply power card effects from inventory - MUCH MORE POWERFUL
+    if (gameState.inventory && gameState.inventory.length > 0) {
+      let wordCount = allFoundWords.length;
+      
+      gameState.inventory.forEach(item => {
+        const originalScore = baseScore;
+        
+        switch (item.effect.type) {
+          case 'letterMultiplier':
+            baseScore = Math.floor(baseScore * item.effect.value);
+            // Trigger visual effect
+            if (onPowerCardTriggered) {
+              const bonus = baseScore - originalScore;
+              onPowerCardTriggered(item.id, bonus, `${item.name}: ${item.effect.value}x multiplier!`);
+            }
+            break;
+            
+          case 'vowelBonus':
+            const vowelCount = word.split('').filter(c => 'aeiouAEIOU'.includes(c)).length;
+            if (vowelCount > 0) {
+              baseScore += vowelCount * 25; // Each vowel adds 25 points
+              baseScore = Math.floor(baseScore * (item.effect.value || 2));
+            }
+            break;
+            
+          case 'chainMultiplier':
+            const chainLength = Math.min(wordCount, 10);
+            if (chainLength > 0) {
+              const chainBonus = 1 + (chainLength * 0.5); // Much stronger chain bonus
+              baseScore = Math.floor(baseScore * chainBonus);
+            }
+            break;
+            
+          case 'longWordMultiplier':
+            if (word.length >= (item.effect.minLength || 6)) {
+              baseScore = Math.floor(baseScore * (item.effect.multiplier || 4));
+            }
+            break;
+            
+          case 'shortWordMultiplier':
+            if (word.length <= (item.effect.maxLength || 4)) {
+              baseScore = Math.floor(baseScore * (item.effect.multiplier || 3));
+            }
+            break;
+            
+          case 'goldenLetters':
+            // Higher chance for golden effect
+            if (Math.random() < 0.4) {
+              baseScore = Math.floor(baseScore * 3);
+            }
+            break;
+            
+          case 'wordEcho':
+            // Chance to score word TWICE
+            if (Math.random() < (item.effect.chance || 0.35)) {
+              baseScore = Math.floor(baseScore * 2);
+            }
+            break;
+            
+          case 'avalancheBonus':
+            // Every 3rd word gets massive bonus
+            if ((wordCount + 1) % (item.effect.interval || 3) === 0) {
+              baseScore = Math.floor(baseScore * (item.effect.multiplier || 5));
+            }
+            break;
+            
+          case 'rareLetterBonus':
+            const rareLetters = word.split('').filter(c => 'JQXZ'.includes(c.toUpperCase())).length;
+            if (rareLetters > 0) {
+              baseScore += rareLetters * (item.effect.value || 50);
+            }
+            break;
+            
+          case 'baseScoreBonus':
+            baseScore += (item.effect.value || 100);
+            break;
+            
+          case 'timeExtender':
+            // Time effects would be handled at word submission level
+            break;
+            
+          case 'coinMultiplier':
+            // Coin effects handled in main game logic
+            break;
+            
+          default:
+            // Default power card gives substantial multiplier
+            baseScore = Math.floor(baseScore * 2.0);
+            break;
+        }
+      });
     }
     
     return Math.round(baseScore);
@@ -342,11 +399,14 @@ export function LetterGrid({ onWordFound, onScoreUpdate, onCurrentWordChange, ti
         return;
       }
 
+      // Always validate via API when actually submitting the word
       let isValid = false;
-      if (wordValidationStatus === 'checking') {
-        isValid = await isValidWord(currentWord);
+      if (wordValidationStatus === 'valid') {
+        // Already validated as valid synchronously
+        isValid = true;
       } else {
-        isValid = wordValidationStatus === 'valid';
+        // Check via API for definitive validation
+        isValid = await isValidWord(currentWord);
       }
       
       if (isValid) {

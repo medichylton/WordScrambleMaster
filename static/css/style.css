@@ -1,0 +1,641 @@
+/* Game Boy Color Scheme */
+:root {
+    --gb-darkest: #0f380f;    /* Darkest green - text and borders */
+    --gb-dark: #306230;       /* Dark green - secondary elements */
+    --gb-light: #8bac0f;      /* Light green - backgrounds */
+    --gb-lightest: #9bbc0f;   /* Lightest green - highlights */
+    
+    /* Mobile viewport units */
+    --vh: 1vh;
+}
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-font-smoothing: none;
+    font-smoothing: none;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+body {
+    font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+    background: var(--gb-lightest);
+    color: var(--gb-darkest);
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: bold;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+/* Game Container */
+.game-container {
+    width: 100vw;
+    height: calc(var(--vh, 1vh) * 100);
+    display: flex;
+    flex-direction: column;
+    background: var(--gb-lightest);
+    overflow-y: auto;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+/* Header */
+.header {
+    background: var(--gb-lightest);
+    padding: 16px 20px;
+    border-bottom: 3px solid var(--gb-darkest);
+    flex-shrink: 0;
+}
+
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.coins, .level {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+}
+
+.score {
+    text-align: center;
+}
+
+.score span {
+    font-size: 48px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+}
+
+.title h1 {
+    text-align: center;
+    font-size: 24px;
+    color: var(--gb-darkest);
+    margin: 0;
+}
+
+/* Power Cards Section */
+.power-cards-section {
+    padding: 16px 20px 8px;
+    flex-shrink: 0;
+}
+
+.power-cards-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+    margin-bottom: 8px;
+}
+
+.power-cards-container {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.power-card {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    background: var(--gb-darkest);
+    color: var(--gb-lightest);
+    border: 3px solid var(--gb-darkest);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.power-card.empty {
+    background: var(--gb-light);
+    opacity: 0.3;
+}
+
+/* POWER CARD DOPAMINE ANIMATIONS */
+.power-card.active {
+    background: var(--gb-lightest) !important;
+    color: var(--gb-darkest) !important;
+    animation: powerCardPulse 0.6s ease-in-out !important;
+    box-shadow: 0 0 15px rgba(15, 56, 15, 0.8) !important;
+    transform: scale(1.2) rotate(5deg) !important;
+}
+
+@keyframes powerCardPulse {
+    0% { 
+        transform: scale(1) rotate(0deg);
+    }
+    25% { 
+        transform: scale(1.4) rotate(-5deg);
+    }
+    50% { 
+        transform: scale(1.2) rotate(8deg);
+    }
+    75% { 
+        transform: scale(1.4) rotate(-3deg);
+    }
+    100% { 
+        transform: scale(1.2) rotate(5deg);
+    }
+}
+
+.power-card-bonus {
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+    background: var(--gb-lightest);
+    padding: 2px 6px;
+    border: 2px solid var(--gb-darkest);
+    white-space: nowrap;
+    z-index: 10;
+    animation: bonusPointsFloat 2s ease-out forwards !important;
+}
+
+@keyframes bonusPointsFloat {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px);
+    }
+}
+
+/* Letter Grid */
+.grid-container {
+    padding: 8px 20px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.letter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    max-width: 300px;
+    width: 100%;
+}
+
+.letter-cell {
+    aspect-ratio: 1;
+    background: var(--gb-lightest);
+    border: 3px solid var(--gb-darkest);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    transition: all 0.1s ease;
+}
+
+.letter-cell:hover,
+.letter-cell:active {
+    background: var(--gb-light);
+}
+
+.letter-cell.selected {
+    background: var(--gb-darkest);
+    color: var(--gb-lightest);
+}
+
+.letter-cell.in-path {
+    background: var(--gb-light);
+}
+
+/* Word Display */
+.word-display {
+    padding: 16px 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.current-word {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+    min-height: 30px;
+    border: 3px solid var(--gb-darkest);
+    background: var(--gb-light);
+    padding: 8px 16px;
+    display: inline-block;
+    min-width: 200px;
+}
+
+/* Action Buttons */
+.action-buttons {
+    padding: 8px 20px;
+    flex-shrink: 0;
+}
+
+.button-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.gb-button {
+    background: var(--gb-darkest);
+    color: var(--gb-lightest);
+    border: 3px solid var(--gb-darkest);
+    padding: 12px 16px;
+    font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    touch-action: manipulation;
+    flex: 1;
+}
+
+.gb-button:hover,
+.gb-button:active {
+    background: var(--gb-light);
+    color: var(--gb-darkest);
+}
+
+.gb-button:disabled {
+    background: var(--gb-light);
+    color: var(--gb-darkest);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.gb-button.primary {
+    background: var(--gb-darkest);
+    color: var(--gb-lightest);
+    font-size: 16px;
+    width: 100%;
+}
+
+.gb-button.secondary {
+    font-size: 12px;
+}
+
+/* Progress Bar */
+.progress-container {
+    padding: 16px 20px;
+    flex-shrink: 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 16px;
+    background: var(--gb-darkest);
+    border: 3px solid var(--gb-darkest);
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--gb-lightest);
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.target-score {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+}
+
+/* Messages */
+.message-container {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.message {
+    background: var(--gb-darkest);
+    color: var(--gb-lightest);
+    padding: 8px 16px;
+    margin: 4px 0;
+    border: 3px solid var(--gb-darkest);
+    font-weight: bold;
+    text-align: center;
+    animation: messageSlide 3s ease-in-out;
+    max-width: 80vw;
+}
+
+@keyframes messageSlide {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    10%, 90% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+.message.success {
+    background: var(--gb-light);
+    color: var(--gb-darkest);
+}
+
+.message.error {
+    background: var(--gb-darkest);
+    color: var(--gb-lightest);
+}
+
+/* Modals */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 56, 15, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: var(--gb-lightest);
+    border: 4px solid var(--gb-darkest);
+    padding: 20px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 400px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--gb-darkest);
+    padding-bottom: 8px;
+}
+
+.modal-header h2 {
+    font-size: 20px;
+    color: var(--gb-darkest);
+    margin: 0;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Shop Items */
+.shop-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.shop-item {
+    border: 3px solid var(--gb-darkest);
+    padding: 12px;
+    background: var(--gb-light);
+}
+
+.shop-item-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.shop-item-emoji {
+    font-size: 32px;
+    width: 40px;
+    text-align: center;
+}
+
+.shop-item-info {
+    flex: 1;
+}
+
+.shop-item-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+    margin-bottom: 4px;
+}
+
+.shop-item-description {
+    font-size: 12px;
+    color: var(--gb-darkest);
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.shop-item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.shop-item-cost {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--gb-darkest);
+}
+
+.shop-item-rarity {
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: var(--gb-darkest);
+}
+
+.shop-item-rarity.common { opacity: 0.7; }
+.shop-item-rarity.uncommon { opacity: 0.8; }
+.shop-item-rarity.rare { opacity: 0.9; }
+.shop-item-rarity.legendary { opacity: 1.0; text-decoration: underline; }
+
+/* Level Complete Modal */
+.level-complete-content {
+    text-align: center;
+}
+
+.level-complete-content p {
+    margin: 8px 0;
+    font-size: 16px;
+    color: var(--gb-darkest);
+}
+
+/* Loading Screen */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gb-lightest);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+
+.loading-screen.hidden {
+    display: none;
+}
+
+.loading-content {
+    text-align: center;
+    color: var(--gb-darkest);
+}
+
+.loading-spinner {
+    font-size: 48px;
+    animation: spin 2s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Install Button */
+.install-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 480px) {
+    .score span {
+        font-size: 36px;
+    }
+    
+    .letter-cell {
+        font-size: 18px;
+    }
+    
+    .current-word {
+        font-size: 20px;
+        min-width: 150px;
+    }
+    
+    .gb-button {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    
+    .gb-button.primary {
+        font-size: 14px;
+    }
+    
+    .power-card {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+}
+
+@media (max-height: 600px) {
+    .header {
+        padding: 12px 20px;
+    }
+    
+    .power-cards-section {
+        padding: 12px 20px 6px;
+    }
+    
+    .grid-container {
+        padding: 6px 20px;
+    }
+    
+    .word-display {
+        padding: 12px 20px;
+    }
+    
+    .action-buttons {
+        padding: 6px 20px;
+    }
+    
+    .progress-container {
+        padding: 12px 20px;
+    }
+}
+
+/* Landscape mode adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+    .game-container {
+        overflow-y: auto;
+    }
+    
+    .header {
+        padding: 8px 20px;
+    }
+    
+    .stats-row {
+        margin-bottom: 8px;
+    }
+    
+    .title h1 {
+        font-size: 20px;
+    }
+    
+    .score span {
+        font-size: 32px;
+    }
+}
+
+/* High DPI screens */
+@media (-webkit-min-device-pixel-ratio: 2) {
+    * {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: pixelated;
+    }
+} 

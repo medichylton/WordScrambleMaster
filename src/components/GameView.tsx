@@ -27,41 +27,60 @@ function ChallengeSelection() {
   const [expandedLevel, setExpandedLevel] = useState<number | null>(null);
   
   // Calculate target scores based on current level progression
-  const calculateTargetScore = (baseScore: number) => {
-    const level = gameState.currentLevel;
+  const calculateTargetScore = (level: number) => {
+    // Much more aggressive difficulty scaling - exponential growth
     const difficultyMultiplier = {
-      'apprentice': 1,
-      'scholar': 1.3,
-      'expert': 1.6,
-      'master': 2.0,
-      'grandmaster': 2.5
+      'apprentice': 1.0,
+      'scholar': 1.4,
+      'expert': 1.8,
+      'master': 2.3,
+      'grandmaster': 3.0
     }[gameState.difficulty] || 1;
     
-    return Math.floor(baseScore * Math.pow(1.15, level - 1) * difficultyMultiplier);
+    // Exponential base score growth that requires power cards
+    let baseScore;
+    if (level === 1) baseScore = 75;         // Level 1: 75 points (doable without power cards)
+    else if (level === 2) baseScore = 150;   // Level 2: 150 points (challenging)
+    else if (level === 3) baseScore = 275;   // Level 3: 275 points (need 1-2 power cards)
+    else if (level === 4) baseScore = 450;   // Level 4: 450 points (need power card synergy)
+    else if (level === 5) baseScore = 700;   // Level 5: 700 points (seriously challenging)
+    else {
+      // Level 6+: Exponential scaling that REQUIRES good power card builds
+      baseScore = 700 * Math.pow(1.6, level - 5); 
+    }
+    
+    return Math.floor(baseScore * difficultyMultiplier);
   };
 
   // Generate current level challenge (only this one is playable)
   const generateCurrentLevelChallenge = () => {
     const level = gameState.currentLevel;
-    const baseScore = 30 + (level * 5);
     const levelEffects = getLevelEffects(level);
-    const timeLimit = getLevelTimeLimit(level, 120);
+    const baseTimeLimit = 120;
+    const timeLimit = Math.max(60, baseTimeLimit - levelEffects.timeReduction);
+    
+    // Progressive time pressure
+    const adjustedTimeLimit = Math.max(45, timeLimit - Math.floor(level / 3) * 15);
     
     return {
       type: 'standard',
-      name: 'WORD HUNT',
-      description: 'Find words in the grid',
-      icon: '>>',
-      targetScore: calculateTargetScore(baseScore),
-      timeLimit: timeLimit,
-      coinReward: Math.floor(15 + (level * 2)),
+      name: getLevelName(level),
+      description: getLevelDescription(level),
+      icon: getLevelIcon(level),
+      targetScore: calculateTargetScore(level),
+      timeLimit: adjustedTimeLimit,
+      coinReward: Math.floor(25 + (level * 3)), // Better coin rewards for harder challenges
       disadvantages: [
         levelEffects.vowelReduction > 0 ? `${Math.round(levelEffects.vowelReduction * 100)}% fewer vowels` : '',
         levelEffects.diagonalBlocked ? 'No diagonal connections' : '',
         levelEffects.minWordLength > 3 ? `Minimum ${levelEffects.minWordLength}-letter words` : '',
         levelEffects.timeReduction > 0 ? `Time reduced by ${levelEffects.timeReduction}s` : '',
         levelEffects.consonantBonus > 0 ? `Consonants worth +${levelEffects.consonantBonus} points` : '',
-        levelEffects.palindromeBonus > 1 ? `Palindromes worth ${levelEffects.palindromeBonus}x points` : ''
+        levelEffects.palindromeBonus > 1 ? `Palindromes worth ${levelEffects.palindromeBonus}x points` : '',
+        `Target: ${calculateTargetScore(level)} points in ${adjustedTimeLimit}s`,
+        level >= 3 ? 'Power cards recommended' : '',
+        level >= 5 ? 'Power card synergy required' : '',
+        level >= 8 ? 'Master-level challenge' : ''
       ].filter(Boolean),
       skipPerk: generateRandomPowerCard(gameState.currentLevel)
     };
@@ -86,16 +105,26 @@ function ChallengeSelection() {
       const level = gameState.currentLevel + i;
       if (level > gameState.maxLevel) break;
       
-      const baseScore = 30 + (level * 5);
+      const levelEffects = getLevelEffects(level);
+      const baseTimeLimit = 120;
+      const timeLimit = Math.max(60, baseTimeLimit - levelEffects.timeReduction);
+      const adjustedTimeLimit = Math.max(45, timeLimit - Math.floor(level / 3) * 15);
+      
       futureLevels.push({
         level,
         name: getLevelName(level),
         description: getLevelDescription(level),
         icon: getLevelIcon(level),
-        targetScore: calculateTargetScore(baseScore),
-        timeLimit: 120 - (i * 10),
-        coinReward: Math.floor(15 + (level * 2)),
-        disadvantages: getLevelDisadvantages(level),
+        targetScore: calculateTargetScore(level),
+        timeLimit: adjustedTimeLimit,
+        coinReward: Math.floor(25 + (level * 3)),
+        disadvantages: [
+          ...getLevelDisadvantages(level),
+          `Target: ${calculateTargetScore(level)} points`,
+          level >= 3 ? 'Power cards recommended' : '',
+          level >= 5 ? 'Power card synergy required' : '',
+          level >= 8 ? 'Master-level challenge' : ''
+        ].filter(Boolean),
         skipPerk: generateRandomPowerCard(level)
       });
     }
@@ -497,6 +526,15 @@ function PlayingChallenge() {
   const [shuffleKey, setShuffleKey] = useState(0);
   const [wordFoundMessage, setWordFoundMessage] = useState('');
   
+  // Power card visual effects state
+  const [activatedCards, setActivatedCards] = useState<{[cardId: string]: {
+    isActive: boolean;
+    bonusPoints: number;
+    message: string;
+    timestamp: number;
+  }}>({});
+  const [cardBonusDisplay, setCardBonusDisplay] = useState<{[cardId: string]: number}>({});
+  
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
@@ -556,6 +594,41 @@ function PlayingChallenge() {
   
   const handleCurrentWordChange = (word: string) => {
     setCurrentWord(word);
+  };
+  
+  const handlePowerCardTriggered = (cardId: string, bonusPoints: number, message: string) => {
+    // Activate visual effect for this card
+    setActivatedCards(prev => ({
+      ...prev,
+      [cardId]: {
+        isActive: true,
+        bonusPoints,
+        message,
+        timestamp: Date.now()
+      }
+    }));
+    
+    // Show bonus points
+    setCardBonusDisplay(prev => ({
+      ...prev,
+      [cardId]: bonusPoints
+    }));
+    
+    // Clear effects after animation
+    setTimeout(() => {
+      setActivatedCards(prev => ({
+        ...prev,
+        [cardId]: { ...prev[cardId], isActive: false }
+      }));
+    }, 600);
+    
+    setTimeout(() => {
+      setCardBonusDisplay(prev => {
+        const newDisplay = { ...prev };
+        delete newDisplay[cardId];
+        return newDisplay;
+      });
+    }, 2000);
   };
   
   const handleChallengeComplete = (finalScore?: number) => {
@@ -724,6 +797,7 @@ function PlayingChallenge() {
           onWordFound={handleWordFound}
           onScoreUpdate={handleScoreUpdate}
           onCurrentWordChange={handleCurrentWordChange}
+          onPowerCardTriggered={handlePowerCardTriggered}
           timeRemaining={timeRemaining}
           hideWordDisplay={true}
           foundWords={wordsFound}
@@ -758,20 +832,54 @@ function PlayingChallenge() {
             gap: '8px'
           }}>
             {/* Show active power cards */}
-            {gameState.inventory.slice(0, 3).map((item, index) => (
-              <div key={item.id} style={{
-                width: '40px',
-                height: '40px',
-                background: '#0F380F',
-                border: '2px solid #0F380F',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '20px'
-              }}>
-                {getPerkEmoji(item.name)}
-              </div>
-            ))}
+            {gameState.inventory.slice(0, 3).map((item, index) => {
+              const isActivated = activatedCards[item.id]?.isActive;
+              const bonusPoints = cardBonusDisplay[item.id];
+              
+              return (
+                <div key={item.id} style={{ position: 'relative' }}>
+                  <div 
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      background: isActivated ? '#9BBB0F' : '#0F380F',
+                      border: '2px solid #0F380F',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '20px',
+                      color: isActivated ? '#0F380F' : '#9BBB0F',
+                      transform: isActivated ? 'scale(1.2) rotate(5deg)' : 'scale(1)',
+                      transition: 'all 0.3s ease',
+                      animation: isActivated ? 'powerCardPulse 0.6s ease-in-out' : 'none',
+                      boxShadow: isActivated ? '0 0 10px rgba(15, 56, 15, 0.5)' : 'none'
+                    }}
+                  >
+                    {getPerkEmoji(item.name)}
+                  </div>
+                  
+                  {/* Bonus points display */}
+                  {bonusPoints && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '-20px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      color: '#0F380F',
+                      background: '#9BBB0F',
+                      padding: '2px 6px',
+                      border: '1px solid #0F380F',
+                      animation: 'bonusPointsFloat 2s ease-out forwards',
+                      zIndex: 10
+                    }}>
+                      +{bonusPoints}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {/* Empty slots */}
             {Array.from({ length: Math.max(0, 3 - gameState.inventory.length) }).map((_, index) => (
               <div key={`empty-${index}`} style={{
@@ -1172,48 +1280,131 @@ function ShopView() {
     const items: InventoryItem[] = [];
     const level = gameState.currentLevel;
     
-    // Generate 6 shop items with varying rarities
+    // Define unique power cards with fixed rarities and costs based on power level
+    const powerCardTemplates = [
+      // COMMON CARDS (15-20 coins) - Basic utility effects
+      {
+        name: 'Letter Alchemy',
+        description: 'Rare letters (J,Q,X,Z) add +10 points each',
+        effect: { type: 'rareLetterBonus' as const, value: 10 },
+        emoji: '🔮',
+        rarity: 'common' as const,
+        baseCost: 15
+      },
+      {
+        name: 'Coin Storm',
+        description: 'Each word gives +5 coins + length bonus',
+        effect: { type: 'coinMultiplier' as const, value: 2.0 },
+        emoji: '💰',
+        rarity: 'common' as const,
+        baseCost: 18
+      },
+      {
+        name: 'Time Warp',
+        description: 'Adds 45 seconds + freezes time for first 10 words',
+        effect: { type: 'timeExtender' as const, seconds: 45 },
+        emoji: '⏰',
+        rarity: 'common' as const,
+        baseCost: 20
+      },
+      
+      // UNCOMMON CARDS (25-40 coins) - Solid scoring improvements
+      {
+        name: 'Perfect Storm',
+        description: 'Short words (3-4 letters) score 3x (stack with other bonuses)',
+        effect: { type: 'shortWordMultiplier' as const, maxLength: 4, multiplier: 3.0 },
+        emoji: '🌪️',
+        rarity: 'uncommon' as const,
+        baseCost: 25
+      },
+      {
+        name: 'Vowel Crusher',
+        description: 'Each vowel adds +25 points to word score + 3x multiplier',
+        effect: { type: 'vowelBonus' as const, value: 3.0 },
+        emoji: '🎯',
+        rarity: 'uncommon' as const,
+        baseCost: 30
+      },
+      {
+        name: 'Chain Lightning',
+        description: 'Each consecutive word: 1st=+50%, 2nd=+100%, 3rd=+200%',
+        effect: { type: 'chainMultiplier' as const, value: 1.5 },
+        emoji: '⛓️',
+        rarity: 'uncommon' as const,
+        baseCost: 35
+      },
+      {
+        name: 'Golden Touch',
+        description: '40% chance for 3x score multiplier',
+        effect: { type: 'goldenLetters' as const, enabled: true },
+        emoji: '✨',
+        rarity: 'uncommon' as const,
+        baseCost: 40
+      },
+      
+      // RARE CARDS (50-80 coins) - Powerful game-changing effects
+      {
+        name: 'Word Mirage',
+        description: '35% chance to score the word TWICE',
+        effect: { type: 'wordEcho' as const, chance: 0.35 },
+        emoji: '🔄',
+        rarity: 'rare' as const,
+        baseCost: 50
+      },
+      {
+        name: 'Word Titan',
+        description: '6+ letter words score 4x points (essential for late game)',
+        effect: { type: 'longWordMultiplier' as const, minLength: 6, multiplier: 4.0 },
+        emoji: '📚',
+        rarity: 'rare' as const,
+        baseCost: 65
+      },
+      {
+        name: 'Score Doubler',
+        description: 'ALL word scores multiplied by 2.5x',
+        effect: { type: 'letterMultiplier' as const, value: 2.5 },
+        emoji: '⚡',
+        rarity: 'rare' as const,
+        baseCost: 75
+      },
+      
+      // LEGENDARY CARDS (100+ coins) - Ultimate power effects
+      {
+        name: 'Score Avalanche',
+        description: 'Every 3rd word scored gets 5x multiplier',
+        effect: { type: 'avalancheBonus' as const, interval: 3, multiplier: 5.0 },
+        emoji: '🏔️',
+        rarity: 'legendary' as const,
+        baseCost: 100
+      },
+      {
+        name: 'Word God',
+        description: 'ALL words get +100 base points before multipliers',
+        effect: { type: 'baseScoreBonus' as const, value: 100 },
+        emoji: '👑',
+        rarity: 'legendary' as const,
+        baseCost: 150
+      }
+    ];
+    
+    // Generate 6 unique shop items with fixed costs
+    const shuffledTemplates = [...powerCardTemplates].sort(() => Math.random() - 0.5);
+    
     for (let i = 0; i < 6; i++) {
-      const rarity = getRandomRarity();
-      const cost = calculateCost(rarity, level);
+      const template = shuffledTemplates[i % shuffledTemplates.length];
+      // Use fixed cost with slight level scaling
+      const cost = Math.floor(template.baseCost * (1 + level * 0.1));
       const sellValue = Math.floor(cost * 0.6);
       
-      // Create a simple power card item
-      const powerCardNames = [
-        'Score Booster', 'Vowel Hunter', 'Long Word Master', 'Speed Bonus',
-        'Coin Collector', 'Time Extender', 'Letter Multiplier', 'Word Echo',
-        'Pattern Finder', 'Chain Builder', 'Streak Master', 'Perfect Score'
-      ];
-      
-      const powerCardDescriptions = [
-        'Increases all word scores by 50%',
-        'Vowel-heavy words score double',
-        'Long words (6+ letters) score triple',
-        'Fast word finding gives bonus points',
-        'Earn extra coins for each word found',
-        'Adds 30 seconds to time limit',
-        'Each letter adds bonus points',
-        'Small chance to duplicate word scores',
-        'Palindromes and patterns score more',
-        'Consecutive words build multipliers',
-        'Word streaks give exponential bonuses',
-        'Perfect level completion gives huge bonus'
-      ];
-      
-      const randomIndex = Math.floor(Math.random() * powerCardNames.length);
-      
       const item: InventoryItem = {
-        id: `shop-${Date.now()}-${i}`,
-        name: powerCardNames[randomIndex],
-        description: powerCardDescriptions[randomIndex],
-        rarity: rarity,
+        id: `shop-${Date.now()}-${i}-${Math.random()}`, // Ensure unique IDs
+        name: template.name,
+        description: template.description,
+        rarity: template.rarity,
         cost: cost,
         sellValue: sellValue,
-        effect: {
-          type: 'letterMultiplier',
-          value: 1.5 + (Math.random() * 0.5) // 1.5x to 2x multiplier
-        },
-        emoji: '🎯',
+        effect: template.effect,
+        emoji: template.emoji,
         purchaseLevel: level,
         timesUsed: 0,
         stackCount: 1

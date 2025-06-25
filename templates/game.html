@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Word Scramble Master</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#9BBB0F">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Word Scramble">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Prevent zoom on input focus -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+</head>
+<body>
+    <!-- Game Container -->
+    <div id="gameContainer" class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="stats-row">
+                <div class="coins">
+                    <span id="coinsDisplay">🪙 15</span>
+                </div>
+                <div class="score">
+                    <span id="scoreDisplay">0</span>
+                </div>
+                <div class="level">
+                    <span id="levelDisplay">Lv.1</span>
+                </div>
+            </div>
+            
+            <div class="title">
+                <h1>Word Hunt</h1>
+            </div>
+        </div>
+        
+        <!-- Power Cards Section -->
+        <div class="power-cards-section">
+            <div class="power-cards-label">Power Cards</div>
+            <div id="powerCardsContainer" class="power-cards-container">
+                <!-- Power cards will be inserted here -->
+            </div>
+        </div>
+        
+        <!-- Letter Grid -->
+        <div class="grid-container">
+            <div id="letterGrid" class="letter-grid">
+                <!-- 4x4 grid will be generated here -->
+            </div>
+        </div>
+        
+        <!-- Current Word Display -->
+        <div class="word-display">
+            <div id="currentWord" class="current-word">TAP LETTERS TO SPELL</div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button id="submitBtn" class="gb-button primary">SUBMIT WORD</button>
+            <div class="button-row">
+                <button id="clearBtn" class="gb-button secondary">CLEAR</button>
+                <button id="shuffleBtn" class="gb-button secondary">⟲ 10🪙</button>
+                <button id="shopBtn" class="gb-button secondary">🛒 SHOP</button>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="targetScore" class="target-score">Target: 75 points</div>
+        </div>
+        
+        <!-- Messages -->
+        <div id="messageContainer" class="message-container"></div>
+    </div>
+    
+    <!-- Shop Modal -->
+    <div id="shopModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🛒 Power Shop</h2>
+                <button id="closeShop" class="close-button">✕</button>
+            </div>
+            <div id="shopItems" class="shop-items">
+                <!-- Shop items will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Level Complete Modal -->
+    <div id="levelCompleteModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🎉 Level Complete!</h2>
+            </div>
+            <div class="level-complete-content">
+                <p>Congratulations! You've completed the level!</p>
+                <p>🪙 +20 coins bonus</p>
+                <button id="nextLevelBtn" class="gb-button primary">NEXT LEVEL</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner">🎮</div>
+            <div>Loading Word Scramble...</div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="/static/js/game.js"></script>
+    
+    <!-- PWA Installation -->
+    <script>
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            });
+        }
+        
+        // Handle install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button
+            const installBtn = document.createElement('button');
+            installBtn.textContent = '📱 Install App';
+            installBtn.className = 'install-button gb-button';
+            installBtn.onclick = () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        installBtn.remove();
+                    }
+                    deferredPrompt = null;
+                });
+            };
+            
+            document.querySelector('.header').appendChild(installBtn);
+        });
+    </script>
+</body>
+</html> 

@@ -97,11 +97,14 @@ export async function isValidWord(word: string): Promise<boolean> {
       }
     }
     
-    // If API fails or word not found, cache as invalid
+    // If API fails or word not found, cache as invalid (but don't log 404s as errors)
     wordCache.set(normalizedWord, false);
     return false;
   } catch (error) {
-    console.warn('Dictionary API error:', error);
+    // Only log actual network errors, not 404s for invalid words
+    if (error instanceof TypeError) {
+      console.warn('Dictionary API network error:', error.message);
+    }
     // Fall back to common words only if API is unavailable
     const isCommon = COMMON_WORDS.has(normalizedWord);
     wordCache.set(normalizedWord, isCommon);
@@ -176,30 +179,31 @@ export function generateBoggleGrid(): string[][] {
 export function calculateWordScore(word: string, timeBonus: number = 1, difficulty: 'easy' | 'medium' | 'hard' = 'medium'): number {
   const length = word.length;
   
-  // More generous scoring system for easier gameplay
+  // More substantial base scoring for challenging targets
   let baseScore = 0;
-  if (length === 2) baseScore = 3;                    // 2 letters: 3 points (new!)
-  else if (length >= 3 && length <= 4) baseScore = 5; // 3-4 letters: 5 points (increased)
-  else if (length === 5) baseScore = 8;               // 5 letters: 8 points (increased)
-  else if (length === 6) baseScore = 12;              // 6 letters: 12 points (increased)  
-  else if (length === 7) baseScore = 18;              // 7 letters: 18 points (increased)
-  else if (length >= 8) baseScore = 25;               // 8+ letters: 25 points (increased)
+  if (length === 2) baseScore = 8;                    // 2 letters: 8 points
+  else if (length === 3) baseScore = 12;              // 3 letters: 12 points
+  else if (length === 4) baseScore = 18;              // 4 letters: 18 points
+  else if (length === 5) baseScore = 25;              // 5 letters: 25 points
+  else if (length === 6) baseScore = 35;              // 6 letters: 35 points  
+  else if (length === 7) baseScore = 50;              // 7 letters: 50 points
+  else if (length >= 8) baseScore = 70;               // 8+ letters: 70 points
   else return 0; // Words less than 2 letters get 0 points
   
-  // Easier difficulty multipliers
+  // Difficulty multipliers that matter
   const difficultyMultiplier = {
-    'easy': 1.2,
-    'medium': 1.5,
-    'hard': 2
+    'easy': 1.0,
+    'medium': 1.3,
+    'hard': 1.8
   }[difficulty];
   
-  // Rarity bonus for uncommon letters
+  // Rarity bonus for uncommon letters (more significant)
   const rarityBonus = getRarityBonus(word);
   
   // Final score calculation
   const finalScore = Math.floor(baseScore * difficultyMultiplier * rarityBonus * timeBonus);
   
-  return Math.max(finalScore, 3); // Minimum 3 points (increased)
+  return Math.max(finalScore, 8); // Minimum 8 points
 }
 
 function getRarityBonus(word: string): number {
