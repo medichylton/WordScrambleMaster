@@ -389,7 +389,7 @@ function updateWordDisplay() {
         } else {
             elements.currentWordDisplay.textContent = 'Swipe letters';
             elements.currentWordDisplay.setAttribute('data-placeholder', 'true');
-            elements.currentWordDisplay.style.fontSize = '0.75rem';
+            elements.currentWordDisplay.style.fontSize = '0.7rem';
             elements.currentWordDisplay.style.color = 'var(--gb-green-mid)';
             elements.currentWordDisplay.style.fontWeight = 'normal';
         }

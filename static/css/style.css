@@ -328,11 +328,10 @@ h3 {
     background: var(--gb-green-bg);
     border: 2px solid var(--gb-green-dark);
     border-radius: 6px;
-    padding: 6px 12px;
+    padding: 4px 8px;
     margin-bottom: 4px;
-    min-width: 200px;
-    max-width: 280px;
-    height: 36px;
+    width: 280px;
+    height: 32px;
     text-align: center;
     display: flex;
     align-items: center;
@@ -342,12 +341,13 @@ h3 {
     letter-spacing: 1px;
     overflow: hidden;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 /* Make placeholder text smaller than actual words */
 .current-word:empty::before,
 .current-word[data-placeholder="true"] {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--gb-green-mid);
     font-weight: normal;
 }

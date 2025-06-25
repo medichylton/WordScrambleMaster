@@ -174,7 +174,7 @@ def init_game_state():
         'ante': 1,
         'round': 1,
         'score': 0,
-        'goal_score': 300,
+        'goal_score': 100,  # More achievable goal
         'coins': 100,
         'power_deck': [],  # Start with no power cards
         'grid': generate_boggle_grid(),
@@ -321,14 +321,18 @@ def submit_word():
     round_complete = (game_state['score'] >= game_state['goal_score'] or 
                      game_state['words_remaining'] <= 0)
     
+    print(f"DEBUG: Score={game_state['score']}, Goal={game_state['goal_score']}, Words remaining={game_state['words_remaining']}, Round complete={round_complete}")
+    
     if round_complete:
         if game_state['score'] >= game_state['goal_score']:
             # Success - go to shop
+            print(f"DEBUG: SUCCESS! Going to shop. Score {game_state['score']} >= Goal {game_state['goal_score']}")
             game_state['game_phase'] = 'shop'
             game_state['coins'] += 50  # Round completion bonus
             game_state['run_stats']['rounds_completed'] += 1
         else:
             # Failed to reach goal - game over
+            print(f"DEBUG: FAILURE! Going to game over. Score {game_state['score']} < Goal {game_state['goal_score']}")
             game_state['game_phase'] = 'game_over'
     
     session['game_state'] = game_state
