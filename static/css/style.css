@@ -408,7 +408,7 @@ h3 {
 
 .grid-container {
     width: 100%;
-    height: 300px; /* Much larger - this is the main game element */
+    height: 350px; /* Even larger - main focus */
     display: flex;
     justify-content: center;
     align-items: flex-start;
@@ -419,28 +419,28 @@ h3 {
 .letter-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 4px; /* Restore normal gap */
+    gap: 5px; /* Larger gap for better spacing */
     width: 100%;
-    max-width: 300px; /* Much larger - main focus */
+    max-width: 350px; /* Much bigger - this is the game! */
     background: var(--gb-green-mid);
     border: 3px solid var(--gb-green-dark);
     border-radius: 8px;
-    padding: 8px; /* Restore normal padding */
+    padding: 10px; /* More padding for better look */
 }
 .letter-cell {
     background: var(--gb-green-bg);
     border: 2px solid var(--gb-green-dark);
-    border-radius: 4px;
-    font-size: 1.3rem; /* Larger, readable text */
+    border-radius: 6px; /* Slightly more rounded */
+    font-size: 1.5rem; /* Even larger text */
     font-family: var(--pixel-font);
     color: var(--gb-green-dark);
     text-align: center;
     aspect-ratio: 1;
-    min-height: 50px; /* Much larger, easier to tap */
+    min-height: 60px; /* Much bigger, easy to tap */
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 1px 1px 0 var(--gb-green-mid);
+    box-shadow: 2px 2px 0 var(--gb-green-mid);
     transition: background 0.15s ease, color 0.15s ease, border 0.15s ease;
     user-select: none;
     cursor: pointer;
@@ -468,14 +468,14 @@ h3 {
     flex-shrink: 0; /* Never shrink */
 }
 .current-word {
-    font-size: 1.2rem; /* Larger, readable */
+    font-size: 1.4rem; /* Larger to match bigger grid */
     background: var(--gb-green-bg);
     border: 2px solid var(--gb-green-dark);
     border-radius: 6px;
-    padding: 6px 12px; /* Better padding */
-    margin-bottom: 4px; /* Reasonable margin */
-    width: 300px; /* Match larger grid */
-    height: 36px; /* Taller for readability */
+    padding: 8px 16px; /* More padding */
+    margin-bottom: 6px; /* Better margin */
+    width: 350px; /* Match bigger grid */
+    height: 40px; /* Taller for readability */
     text-align: center;
     display: flex;
     align-items: center;
@@ -513,20 +513,26 @@ h3 {
 
 .shop-container {
     width: 100%;
+    height: 100%; /* Fill entire viewport */
     max-width: 420px;
     margin: 0 auto;
-    padding: 16px 8px 0 8px;
+    padding: 0;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow: hidden; /* Container doesn't scroll */
 }
 .shop-header {
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+    padding: 8px;
+    flex-shrink: 0; /* Header stays fixed */
+    background: var(--gb-green-bg);
+    border-bottom: 2px solid var(--gb-green-mid);
 }
 .shop-info {
     width: 100%;
@@ -536,9 +542,17 @@ h3 {
     font-size: 1rem;
     margin-top: 4px;
 }
+.shop-content {
+    width: 100%;
+    flex: 1; /* Takes up remaining space */
+    overflow-y: auto; /* This scrolls */
+    padding: 8px;
+    box-sizing: border-box;
+}
+
 .shop-section {
     width: 100%;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 .shop-cards-container, .shop-upgrades-container, .shop-packs-container {
     display: flex;
@@ -578,6 +592,17 @@ h3 {
 .shop-card-rarity.uncommon { color: #2e86c1; }
 .shop-card-rarity.rare { color: #a93226; }
 .shop-card-rarity.legendary { color: #f7e26b; }
+
+.shop-actions {
+    width: 100%;
+    padding: 8px;
+    background: var(--gb-green-bg);
+    border-top: 2px solid var(--gb-green-mid);
+    flex-shrink: 0; /* Always visible at bottom */
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
 
 .no-upgrades {
     color: var(--gb-green-dark);
@@ -675,24 +700,25 @@ h3 {
     }
     
     .grid-container {
-        height: 280px; /* Still large on mobile */
+        height: 320px; /* Large on mobile too */
         margin: 6px 0;
     }
     
     .letter-grid {
-        max-width: 280px; /* Good size on mobile */
-        padding: 6px;
+        max-width: 320px; /* Bigger on mobile */
+        padding: 8px;
+        gap: 4px;
     }
     
     .letter-cell {
-        font-size: 1.1rem; /* Readable on mobile */
-        min-height: 44px; /* Touch-friendly size */
+        font-size: 1.2rem; /* Readable on mobile */
+        min-height: 50px; /* Touch-friendly size */
     }
     
     .current-word {
-        width: 280px; /* Match mobile grid */
-        height: 32px;
-        font-size: 1.1rem;
+        width: 320px; /* Match mobile grid */
+        height: 36px;
+        font-size: 1.2rem;
     }
     
     .power-card, .effect-card {
