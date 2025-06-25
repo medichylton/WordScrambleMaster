@@ -380,13 +380,25 @@ function updateWordDisplay() {
     ).join('');
     
     if (elements.currentWordDisplay) {
-        elements.currentWordDisplay.textContent = currentWord || 'Select letters...';
+        if (currentWord) {
+            elements.currentWordDisplay.textContent = currentWord;
+            elements.currentWordDisplay.removeAttribute('data-placeholder');
+            elements.currentWordDisplay.style.fontSize = '1.1rem';
+            elements.currentWordDisplay.style.color = 'var(--gb-green-dark)';
+            elements.currentWordDisplay.style.fontWeight = 'bold';
+        } else {
+            elements.currentWordDisplay.textContent = 'Swipe letters';
+            elements.currentWordDisplay.setAttribute('data-placeholder', 'true');
+            elements.currentWordDisplay.style.fontSize = '0.75rem';
+            elements.currentWordDisplay.style.color = 'var(--gb-green-mid)';
+            elements.currentWordDisplay.style.fontWeight = 'normal';
+        }
     }
     
     // Update validation display
     if (elements.wordValidation) {
         if (currentWord.length >= 2) {
-            elements.wordValidation.textContent = 'Checking...';
+            elements.wordValidation.textContent = 'Ready';
             elements.wordValidation.className = 'word-validation checking';
         } else {
             elements.wordValidation.textContent = '';
@@ -454,7 +466,7 @@ function submitWord() {
                 setTimeout(() => {
                     loadGameState(); // Refresh state
                     showPhase(gameState.game_phase);
-                }, 1000);
+                }, 300);
             }
             
             updateDisplay();
@@ -671,14 +683,14 @@ function showPowerCardEffects(effects) {
             
             // Add vibration on mobile
             if (navigator.vibrate) {
-                navigator.vibrate([50, 50, 100]);
+                navigator.vibrate([30]);
             }
             
             // Remove after animation
             setTimeout(() => {
                 effectElement.remove();
-            }, 2000);
-        }, index * 300);
+            }, 800);
+        }, index * 100);
     });
 }
 
@@ -691,7 +703,7 @@ function showMessage(text, type = 'info') {
     
     setTimeout(() => {
         message.remove();
-    }, 3000);
+    }, 1500);
 }
 
 function updateGameOverStats() {

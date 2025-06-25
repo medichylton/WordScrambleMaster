@@ -328,20 +328,28 @@ h3 {
     background: var(--gb-green-bg);
     border: 2px solid var(--gb-green-dark);
     border-radius: 6px;
-    padding: 8px 16px;
+    padding: 6px 12px;
     margin-bottom: 4px;
     min-width: 200px;
     max-width: 280px;
-    height: 40px;
+    height: 36px;
     text-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--pixel-font);
     font-weight: bold;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     overflow: hidden;
     white-space: nowrap;
+}
+
+/* Make placeholder text smaller than actual words */
+.current-word:empty::before,
+.current-word[data-placeholder="true"] {
+    font-size: 0.75rem;
+    color: var(--gb-green-mid);
+    font-weight: normal;
 }
 .word-validation {
     font-size: 0.9rem;

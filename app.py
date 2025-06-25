@@ -12,9 +12,25 @@ app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret-key-for-developme
 # WORD DICTIONARY API
 def validate_word_api(word):
     """Validate word using dictionary API"""
+    # Expanded fallback word list for faster validation
+    common_words = {
+        'cat', 'dog', 'run', 'jump', 'play', 'game', 'word', 'test', 'code',
+        'help', 'work', 'time', 'life', 'love', 'home', 'good', 'best', 'new',
+        'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had',
+        'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his',
+        'how', 'man', 'may', 'old', 'see', 'two', 'way', 'who', 'boy', 'did',
+        'its', 'let', 'put', 'say', 'she', 'too', 'use', 'big', 'end', 'far',
+        'got', 'own', 'off', 'ask', 'cut', 'lot', 'why', 'top', 'act', 'car',
+        'yet', 'yes', 'win', 'war', 'try', 'box', 'bit', 'bat', 'bag', 'art'
+    }
+    
+    # Check common words first for speed
+    if word.lower() in common_words:
+        return {'valid': True, 'definition': 'Common word', 'phonetic': ''}
+    
     try:
-        # Using Free Dictionary API
-        response = requests.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word.lower()}", timeout=3)
+        # Faster API call with shorter timeout
+        response = requests.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word.lower()}", timeout=1)
         if response.status_code == 200:
             data = response.json()
             return {
@@ -24,12 +40,8 @@ def validate_word_api(word):
             }
         return {'valid': False, 'definition': '', 'phonetic': ''}
     except:
-        # Fallback validation for basic words
-        basic_words = {
-            'cat', 'dog', 'run', 'jump', 'play', 'game', 'word', 'test', 'code',
-            'help', 'work', 'time', 'life', 'love', 'home', 'good', 'best', 'new'
-        }
-        return {'valid': word.lower() in basic_words, 'definition': '', 'phonetic': ''}
+        # Fallback - if word is 3+ letters, assume valid for smooth gameplay
+        return {'valid': len(word) >= 3, 'definition': '', 'phonetic': ''}
 
 # POWER CARD SYSTEM WITH UPGRADE TREES
 POWER_CARDS = [
