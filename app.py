@@ -157,8 +157,6 @@ POWER_CARDS = [
 
 def init_game_state():
     """Initialize new game state"""
-    starter_deck = random.sample([card for card in POWER_CARDS if card['rarity'] == 'Common'], 3)
-    
     return {
         'game_phase': 'menu',  # menu, challenge_select, playing, shop, game_over, victory
         'ante': 1,
@@ -166,7 +164,7 @@ def init_game_state():
         'score': 0,
         'goal_score': 300,
         'coins': 100,
-        'power_deck': starter_deck,
+        'power_deck': [],  # Start with no power cards
         'grid': generate_boggle_grid(),
         'time_remaining': 120,
         'words_remaining': 3,
@@ -313,9 +311,12 @@ def submit_word():
     
     if round_complete:
         if game_state['score'] >= game_state['goal_score']:
+            # Success - go to shop
             game_state['game_phase'] = 'shop'
             game_state['coins'] += 50  # Round completion bonus
+            game_state['run_stats']['rounds_completed'] += 1
         else:
+            # Failed to reach goal - game over
             game_state['game_phase'] = 'game_over'
     
     session['game_state'] = game_state
